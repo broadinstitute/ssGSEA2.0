@@ -50,7 +50,10 @@ ptmGSEA <- function (
   min.overlap         = 10,
   correl.type         = "rank",  # correlation type: "rank", "z.score", "symm.rank"
   fdr.pvalue          = TRUE,    # output adjusted (FDR) p-values
-  global.fdr          = FALSE    # if TRUE calculate global FDR; else calculate FDR sample-by-sample
+  global.fdr          = FALSE,    # if TRUE calculate global FDR; else calculate FDR sample-by-sample
+
+  par=F
+
 ) {
   ## single sample GSEA
   # for results similar to the Java version, use: weight=0;
@@ -126,7 +129,8 @@ ptmGSEA <- function (
             N.gs <- N.gs + GSDB[[i]]$N.gs
         }
     }
-    ## matrix
+    #############################
+    ## convert list to matrix
     gs.mat <- matrix(NA, nrow=length(gs), ncol=max(size.G ), dimnames=list(gs.names, 1:max(size.G)))
     for(i in 1:nrow(gs.mat)){
         gs.tmp <- gs[[i]]
@@ -170,28 +174,217 @@ ptmGSEA <- function (
     size.G <- size.G[locs]
     gs.mat <- gs.mat[locs,]
 
-    #################################################
-    ## Loop over gene sets
-   ## score.matrix <-pval.matrix <- matrix(NA, nrow=N.gs, ncol=Ns)
-##    pval.matrix <- matrix(NA, nrow=N.gs, ncol=Ns)
 
     tt <- Sys.time()
-    tmp <- lapply(1:N.gs, function(gs.i){
+    ######################################################
+    ##
+    ##   function executed per gene set
+    ##
+    ######################################################
+    project.geneset <- function (data.array,
+                             gene.names,
+                             n.cols,
+                             n.rows,
+                             weight = 0,
+                             statistic = "Kolmogorov-Smirnov",  # alternatives: "Kolmogorov-Smirnov", "area.under.RES"
+                             gene.set,
+                             nperm = 200,
+                             correl.type  = "rank"              # "rank", "z.score", "symm.rank"
+                             ) {
 
-        gene.overlap <- gs.mat[gs.i, 1:size.ol.G[gs.i]]
 
-        if (output.score.type == "ES") {
-            OPAM <- project.geneset (data.array = m, gene.names = gene.names, n.cols = Ns, n.rows= Ng, weight = weight, statistic = statistic, gene.set = gene.overlap, nperm = 1, correl.type = correl.type)
-        ##    score.matrix[gs.i,] <- OPAM$ES.vector
-        } else if (output.score.type == "NES") {
-            OPAM <- project.geneset (data.array = m, gene.names = gene.names, n.cols = Ns, n.rows= Ng, weight = weight, statistic = statistic, gene.set = gene.overlap, nperm = nperm, correl.type = correl.type)
-        ##    score.matrix[gs.i,] <- OPAM$NES.vector
+        ## fast implementation of GSEA
+        ES.vector <- NES.vector <- p.val.vector <- vector('numeric', n.cols)
+        correl.vector <- vector("numeric", n.rows)
+
+        ## Compute ES score for signatures in each sample
+        phi <- array(0, c(n.cols, nperm))
+
+        ## loop over columns
+        for (sample.index in 1:n.cols) {
+
+            ## ranks of (normalized) expression values
+            gene.list <- order(data.array[, sample.index], decreasing=T)
+            gene.set2 <- match(gene.set, gene.names)
+
+
+            ###############################################################################
+            ##
+            ##           function to calculate GSEA enrichment score
+            ##
+             ##############################################################################
+            gsea.score <- function (ordered.gene.list) {
+
+                #########################################
+                ## weighting
+                if (weight == 0) {
+                    correl.vector <- rep(1, n.rows)
+                } else if (weight > 0) {
+                    if (correl.type == "rank") {
+                        correl.vector <- data.array[ordered.gene.list, sample.index]
+                    } else if (correl.type == "symm.rank") {
+                        correl.vector <- data.array[ordered.gene.list, sample.index]
+                        correl.vector <- ifelse(correl.vector > correl.vector[ceiling(n.rows/2)],
+                                                correl.vector,
+                                                correl.vector + correl.vector - correl.vector[ceiling(n.rows/2)])
+                    } else if (correl.type == "z.score") {
+                        x <- data.array[ordered.gene.list, sample.index]
+                        correl.vector <- (x - mean(x))/sd(x)
+                    }
+                }
+                #######################################
+                ## match gene set to data
+                tag.indicator <- sign(match(ordered.gene.list, gene.set2, nomatch=0))    # notice that the sign is 0 (no tag) or 1 (tag)
+                no.tag.indicator <- 1 - tag.indicator
+
+                N=n.rows
+                ##N <- length(ordered.gene.list)
+                Nh <- length(gene.set2)
+                Nm <-  N - Nh
+                ##orig.correl.vector <- correl.vector
+                ##if (weight == 0) correl.vector <- rep(1, N)   # unweighted case
+                ind = which(tag.indicator==1)
+                correl.vector <- abs(correl.vector[ind])^weight
+
+                ## sum of weights
+                sum.correl = sum(correl.vector)
+
+                #########################################
+                ## determine peaks and valleys
+                up = correl.vector/sum.correl     # "up" represents the peaks in the mountain plot
+                gaps = (c(ind-1, N) - c(0, ind))  # gaps between ranked pathway genes
+                down = gaps/Nm
+
+                RES = cumsum(c(up,up[Nh])-down)
+                valleys = RES[1:Nh]-up
+
+                max.ES = max(RES)
+                min.ES = min(valleys)
+
+                 #########################################
+                 ## calculate score
+                 ## KM
+                if( statistic == "Kolmogorov-Smirnov" ){
+                    if( max.ES > -min.ES ){
+                        ES <- signif(max.ES, digits=5)
+                        arg.ES <- which.max(RES)
+                    } else{
+                        ES <- signif(min.ES, digits=5)
+                        arg.ES <- which.min(RES)
+                    }
+                }
+                ## AUC
+                if( statistic == "area.under.RES"){
+                    if( max.ES > -min.ES ){
+                        arg.ES <- which.max(RES)
+                    } else{
+                        arg.ES <- which.min(RES)
+                    }
+                    gaps = gaps+1
+                    RES = c(valleys,0) * (gaps) + 0.5*( c(0,RES[1:Nh]) - c(valleys,0) ) * (gaps)
+                    ES = sum(RES)
+                }
+                gsea.results = list(ES = ES, arg.ES = arg.ES, RES = RES, indicator = tag.indicator)
+                return (gsea.results)
+            } ## end function 'gsea.score'
+
+            ## calculate enrichment score
+            GSEA.results <- gsea.score (gene.list)
+            ES.vector[sample.index] <- GSEA.results$ES
+
+
+            ################################################
+            ## no permutations: - ES and NES are the same
+            ##                  - all p-values are 1
+            if (nperm == 0) {
+                NES.vector[sample.index] <- ES.vector[sample.index]
+                p.val.vector[sample.index] <- 1
+
+            ################################################
+            ## do permutations
+            } else {
+                ## tt <- Sys.time()
+
+                ES.tmp = sapply(1:nperm,  function(x) gsea.score(sample(1:n.rows))$ES)
+                phi[sample.index, ] <- unlist(ES.tmp)
+
+                ## cat('permutations: ')
+                ## cat(Sys.time()-tt, '\n')
+
+                #########################################################
+                ## calculate p-values
+                if (ES.vector[sample.index] >= 0) {
+                    pos.phi <- phi[sample.index, phi[sample.index, ] >= 0]
+                    if (length(pos.phi) == 0) pos.phi <- 0.5
+                    pos.m <- mean(pos.phi)
+                    NES.vector[sample.index] <- ES.vector[sample.index]/pos.m
+                    s <- sum(pos.phi >= ES.vector[sample.index])/length(pos.phi)
+                    p.val.vector[sample.index] <- ifelse(s == 0, 1/nperm, s)
+
+                } else {
+                    neg.phi <-  phi[sample.index, phi[sample.index, ] < 0]
+                    if (length(neg.phi) == 0) neg.phi <- 0.5
+                    neg.m <- mean(neg.phi)
+                    NES.vector[sample.index] <- ES.vector[sample.index]/abs(neg.m)
+                    s <- sum(neg.phi <= ES.vector[sample.index])/length(neg.phi)
+                    p.val.vector[sample.index] <- ifelse(s == 0, 1/nperm, s)
+                }
+            }
         }
-            ## extract p-values
-        ##    pval.matrix[gs.i,] <- OPAM$p.val.vector
+        return(list(ES.vector = ES.vector, NES.vector =  NES.vector, p.val.vector = p.val.vector))
+    } ## end function 'project.geneset'
 
+    #####################################
+    ## parallelized version
+    if(par){
+        require(doParallel)
+        require(foreach)
+
+        ## register cores
+        cl <- makeCluster(detectCores()-1)
+        registerDoParallel(cl)
+
+        ######################
+        ## parallel loop
+        tmp <-  foreach(gs.i = 1:N.gs) %dopar% {
+
+            gene.overlap <- gs.mat[gs.i, 1:size.ol.G[gs.i]]
+
+            if (output.score.type == "ES") {
+                OPAM <- project.geneset (data.array = m, gene.names = gene.names, n.cols = Ns, n.rows= Ng, weight = weight, statistic = statistic, gene.set = gene.overlap, nperm = 1, correl.type = correl.type)
+                ##    score.matrix[gs.i,] <- OPAM$ES.vector
+            } else if (output.score.type == "NES") {
+                OPAM <- project.geneset (data.array = m, gene.names = gene.names, n.cols = Ns, n.rows= Ng, weight = weight, statistic = statistic, gene.set = gene.overlap, nperm = nperm, correl.type = correl.type)
+        }
         OPAM
-    })
+        }
+        stopCluster(cl)
+
+        ###################################
+        ## serial loop
+    } else { ## end if 'par'
+
+        tt <- Sys.time()
+        tmp <- lapply(1:N.gs, function(gs.i){
+
+            gene.overlap <- gs.mat[gs.i, 1:size.ol.G[gs.i]]
+
+            if (output.score.type == "ES") {
+                OPAM <- project.geneset (data.array = m, gene.names = gene.names, n.cols = Ns, n.rows= Ng, weight = weight, statistic = statistic, gene.set = gene.overlap, nperm = 1, correl.type = correl.type)
+                ##    score.matrix[gs.i,] <- OPAM$ES.vector
+            } else if (output.score.type == "NES") {
+                OPAM <- project.geneset (data.array = m, gene.names = gene.names, n.cols = Ns, n.rows= Ng, weight = weight, statistic = statistic, gene.set = gene.overlap, nperm = nperm, correl.type = correl.type)
+
+            }
+        OPAM
+        })
+
+    } ## end else
+
+
+    #########################################
+    ## extract scores and pvalues
+    ##  and generate matrices
     tmp.pval <- lapply(tmp, function(x)x$p.val.vector)
     pval.matrix <- matrix(unlist(tmp.pval), byrow=T, nrow=N.gs)
     if (output.score.type == "ES"){
@@ -203,70 +396,24 @@ ptmGSEA <- function (
         score.matrix <- matrix(unlist(tmp.nes), byrow=T, nrow=N.gs)
     }
 
-    ##tt <- Sys.time()
-####    for (gs.i in 1:N.gs) {
-
-        ## signature set
-        ##gene.set <- gs[[gs.i]]
-
-        ## direction of regulation
-        ##gene.set.dir <- sub('.*;(u|d)$','\\1', gene.set)
-        ##gene.set <- sub('^(.*);u|d$','\\1', gene.set)
-
-        ## overlap with PTM sites in input dataset
-        ##        gene.overlap <- intersect(gene.set, gene.names)
-####        gene.overlap <- gs.mat[gs.i, 1:size.ol.G[gs.i]]
-        ##gene.overlap <- gs.mat[gs.i, ]
-        ##gene.overlap <- gene.overlap[!is.na(gene.overlap)]
-####        print(paste(gs.i, "gene set:", gs.names[gs.i], " overlap=", length(gene.overlap)))
-
-        ## require minimal overlap
-        ##        if (length(gene.overlap) >= min.overlap) {
-
-        ## extract data of overlapping sites
-        ##gene.set.locs <- match(gene.overlap, gene.set)
-        ##gene.names.locs <- match(gene.overlap, gene.names)
-
-        ##msig <- m[gene.names.locs,]
-        ##msig.names <- gene.names[gene.names.locs]
-
-        ## project to pathway space
-        ##OPAM <- project.geneset (data.array = m, gene.names = gene.names, n.cols = Ns, n.rows= Ng, weight = weight, statistic = statistic, gene.set = gene.overlap, nperm = ifelse(output.score.type == "ES", 1, nperm), correl.type = correl.type)
-
-        ##################################################
-        ## extract enrichment scores
-####       if (output.score.type == "ES") {
-####            OPAM <- project.geneset (data.array = m, gene.names = gene.names, n.cols = Ns, n.rows= Ng, weight = weight, statistic = statistic, gene.set = gene.overlap, nperm = 1, correl.type = correl.type)
-####            score.matrix[gs.i,] <- OPAM$ES.vector
-####        } else if (output.score.type == "NES") {
-####            OPAM <- project.geneset (data.array = m, gene.names = gene.names, n.cols = Ns, n.rows= Ng, weight = weight, statistic = statistic, gene.set = gene.overlap, nperm = nperm, correl.type = correl.type)
-####            score.matrix[gs.i,] <- OPAM$NES.vector
-####        }
-            ## extract p-values
-####            pval.matrix[gs.i,] <- OPAM$p.val.vector
-        ##}
-####    }
-
-
-
     cat('main loop: ')
     cat(Sys.time()-tt, '\n')
 
-  locs <- !is.na(score.matrix[,1])
-  ##print(paste("N.gs before overlap prunning:", N.gs))
-  N.gs <- sum(locs)
-  ##print(paste("N.gs after overlap prunning:", N.gs))
-  score.matrix <- score.matrix[locs,]
-  pval.matrix <- pval.matrix[locs,]
-  gs.names <- gs.names[locs]
-  gs.descs <- gs.descs[locs]
+    ##locs <- !is.na(score.matrix[,1])
 
-  initial.up.entries <- 0
-  final.up.entries <- 0
-  initial.dn.entries <- 0
-  final.dn.entries <- 0
-  combined.entries <- 0
-  other.entries <- 0
+    ##N.gs <- sum(locs)
+
+    ##score.matrix <- score.matrix[locs,]
+    ##pval.matrix <- pval.matrix[locs,]
+    ##gs.names <- gs.names[locs]
+    ##gs.descs <- gs.descs[locs]
+
+    initial.up.entries <- 0
+    final.up.entries <- 0
+    initial.dn.entries <- 0
+    final.dn.entries <- 0
+    combined.entries <- 0
+    other.entries <- 0
 
   if (combine.mode == "combine.off") {
     score.matrix.2 <- score.matrix
@@ -378,275 +525,6 @@ ptmGSEA <- function (
     write.gct.ssgsea(gct.data.frame=F.GCT, descs=gs.descs.2, filename=paste (output.prefix, '-fdr-pvalues.gct', sep=''))
   }
 }
-
-
-
-############################################################################################
-##
-##
-##
-############################################################################################
-project.geneset <- function (data.array,
-                             gene.names,
-                             n.cols,
-                             n.rows,
-                             weight = 0,
-                             statistic = "Kolmogorov-Smirnov",  # alternatives: "Kolmogorov-Smirnov", "area.under.RES"
-                             gene.set,
-                             nperm = 200,
-                             correl.type  = "rank"              # "rank", "z.score", "symm.rank"
-                             ) {
-
-
-    ## fast implementation of GSEA
-    ES.vector <- NES.vector <- p.val.vector <- vector('numeric', n.cols)
-    correl.vector <- vector("numeric", n.rows)
-
-    ## Compute ES score for signatures in each sample
-    phi <- array(0, c(n.cols, nperm))
-
-    ## loop over columns
-    for (sample.index in 1:n.cols) {
-
-        ## ranks of (normalized) expression values
-        gene.list <- order(data.array[, sample.index], decreasing=T)
-        gene.set2 <- match(gene.set, gene.names)
-
-
-         ###############################################################################
-         ##
-         ##           function to calculate GSEA enrichment score
-         ##
-         ###############################################################################
-        gsea.score <- function (ordered.gene.list) {
-
-            #########################################
-            ## weighting
-            if (weight == 0) {
-                correl.vector <- rep(1, n.rows)
-            } else if (weight > 0) {
-                if (correl.type == "rank") {
-                    correl.vector <- data.array[ordered.gene.list, sample.index]
-                } else if (correl.type == "symm.rank") {
-                    correl.vector <- data.array[ordered.gene.list, sample.index]
-                    correl.vector <- ifelse(correl.vector > correl.vector[ceiling(n.rows/2)],
-                                            correl.vector,
-                                            correl.vector + correl.vector - correl.vector[ceiling(n.rows/2)])
-                } else if (correl.type == "z.score") {
-                    x <- data.array[ordered.gene.list, sample.index]
-                    correl.vector <- (x - mean(x))/sd(x)
-                }
-            }
-            #######################################
-            ## match gene set to data
-            tag.indicator <- sign(match(ordered.gene.list, gene.set2, nomatch=0))    # notice that the sign is 0 (no tag) or 1 (tag)
-            no.tag.indicator <- 1 - tag.indicator
-
-            N=n.rows
-            ##N <- length(ordered.gene.list)
-            Nh <- length(gene.set2)
-            Nm <-  N - Nh
-            ##orig.correl.vector <- correl.vector
-            ##if (weight == 0) correl.vector <- rep(1, N)   # unweighted case
-            ind = which(tag.indicator==1)
-            correl.vector <- abs(correl.vector[ind])^weight
-
-            ## sum of weights
-            sum.correl = sum(correl.vector)
-            #########################################
-            ## determine peaks and valleys
-            up = correl.vector/sum.correl     # "up" represents the peaks in the mountain plot
-            gaps = (c(ind-1, N) - c(0, ind))  # gaps between ranked pathway genes
-            down = gaps/Nm
-
-            RES = cumsum(c(up,up[Nh])-down)
-            valleys = RES[1:Nh]-up
-
-            max.ES = max(RES)
-            min.ES = min(valleys)
-
-            #########################################
-            ## calculate score
-            ## KM
-            if( statistic == "Kolmogorov-Smirnov" ){
-                if( max.ES > -min.ES ){
-                    ES <- signif(max.ES, digits=5)
-                    arg.ES <- which.max(RES)
-                } else{
-                    ES <- signif(min.ES, digits=5)
-                    arg.ES <- which.min(RES)
-                }
-            }
-            ## AUC
-            if( statistic == "area.under.RES"){
-                if( max.ES > -min.ES ){
-                    arg.ES <- which.max(RES)
-                } else{
-                    arg.ES <- which.min(RES)
-                }
-                gaps = gaps+1
-                RES = c(valleys,0) * (gaps) + 0.5*( c(0,RES[1:Nh]) - c(valleys,0) ) * (gaps)
-                ES = sum(RES)
-            }
-            gsea.results = list(ES = ES, arg.ES = arg.ES, RES = RES, indicator = tag.indicator)
-            return (gsea.results)
-        }
-
-        ## calculate enrichment score
-        ##GSEA.results <- gsea.score (ordered.gene.list, gene.set, gene.names, n.rows, correl.type, weight, statistic)
-        GSEA.results <- gsea.score (gene.list)
-
-        ES.vector[sample.index] <- GSEA.results$ES
-        ##ES.vector[sample.index] <- gsea.score (ordered.gene.list, gene.set, gene.names, n.rows, correl.type, weight, statistic)$ES
-
-        ################################################
-        ## no permutations: - ES and NES are the same
-        ##                  - all p-values are 1
-        if (nperm == 0) {
-            NES.vector[sample.index] <- ES.vector[sample.index]
-            p.val.vector[sample.index] <- 1
-
-            ################################################
-            ## do permutations
-        } else {
-           ## tt <- Sys.time()
-
-            ES.tmp = sapply(1:nperm,  function(x) gsea.score(sample(1:n.rows))$ES)
-            phi[sample.index, ] <- unlist(ES.tmp)
-
-           ## cat('permutations: ')
-           ## cat(Sys.time()-tt, '\n')
-
-            #########################################################
-            ## calculate p-values
-            if (ES.vector[sample.index] >= 0) {
-                pos.phi <- phi[sample.index, phi[sample.index, ] >= 0]
-                if (length(pos.phi) == 0) pos.phi <- 0.5
-                pos.m <- mean(pos.phi)
-                NES.vector[sample.index] <- ES.vector[sample.index]/pos.m
-                s <- sum(pos.phi >= ES.vector[sample.index])/length(pos.phi)
-                p.val.vector[sample.index] <- ifelse(s == 0, 1/nperm, s)
-
-            } else {
-                neg.phi <-  phi[sample.index, phi[sample.index, ] < 0]
-                if (length(neg.phi) == 0) neg.phi <- 0.5
-                neg.m <- mean(neg.phi)
-                NES.vector[sample.index] <- ES.vector[sample.index]/abs(neg.m)
-                s <- sum(neg.phi <= ES.vector[sample.index])/length(neg.phi)
-                p.val.vector[sample.index] <- ifelse(s == 0, 1/nperm, s)
-            }
-        }
-    }
-  return(list(ES.vector = ES.vector, NES.vector =  NES.vector, p.val.vector = p.val.vector))
-}
-
-###############################################################################
-##
-##           function to calculate GSEA enrichment score
-##
-###############################################################################
-gsea.score.ext <- function (ordered.gene.list, gene.set, gene.names, n.rows, correl.type, weight, statistic = "area.under.RES") {
-    tt <- Sys.time()
-    ##n.rows = length(gene.list)
-
-    ##############################################
-    ## order of ranked gene list
-    ##ordered.gene.list <- order(gene.list, decreasing=T)
-
-    ##############################################
-    ## match gene set to data (gene.names)
-    gene.set2 <- match(gene.set, gene.names)
-    ##gene.set2 <- match(gene.set, gene.names[ordered.gene.list])
-
-    ##############################################
-    ## weighting
-    if (weight == 0) {
-
-        correl.vector <- rep(1, n.rows)
-
-    } else if (weight > 0) {
-
-        if (correl.type == "rank") {
-            ##correl.vector <- data.array[ordered.gene.list, sample.index]
-            ##correl.vector <- data.array[ordered.gene.list, sample.index]
-            correl.vector <- gene.list
-
-        } else if (correl.type == "symm.rank") {
-            ##correl.vector <- data.array[ordered.gene.list, sample.index]
-            correl.vector <- gene.list
-            correl.vector <- ifelse(correl.vector > correl.vector[ceiling(n.rows/2)],
-                                    correl.vector,
-                                    correl.vector + correl.vector - correl.vector[ceiling(n.rows/2)])
-        } else if (correl.type == "z.score") {
-            x <- gene.list
-            ##x <- data.array[ordered.gene.list, sample.index]
-            correl.vector <- (x - mean(x))/sd(x)
-        }
-    }
-    ##############################################
-    ## get positions of gene sets in ordered ranks
-    ###############################################
-    tag.indicator <- sign(match(ordered.gene.list, gene.set2, nomatch=0))    # notice that the sign is 0 (no tag) or 1 (tag)
-    no.tag.indicator <- 1 - tag.indicator
-
-    ##N <- length(ordered.gene.list)
-    N <- n.rows
-    Nh <- length(gene.set2)
-    Nm <-  N - Nh
-
-    ## store copy
-    ##orig.correl.vector <- correl.vector
-    ##if (weight == 0) correl.vector <- rep(1, N)   # unweighted case
-
-    ## extract locations of gene set
-    ind = which(tag.indicator==1)
-    ## apply weighting
-    correl.vector <- abs(correl.vector[ind])^weight
-
-    ## sum of all weights
-    sum.correl = sum(correl.vector)
-
-    ##########################################
-    ## identify
-    up = correl.vector/sum.correl     # "up" represents the peaks in the mountain plot
-    gaps = (c(ind-1, N) - c(0, ind))  # gaps between ranked pathway genes
-    down = gaps/Nm
-
-    ## calculate score
-    RES = cumsum(c(up,up[Nh])-down)
-    valleys = RES[1:Nh]-up
-
-    max.ES = max(RES)
-    min.ES = min(valleys)
-
-    ###############################################
-    ## calculate score
-    if( statistic == "Kolmogorov-Smirnov" ){
-        if( max.ES > -min.ES ){
-            ES <- signif(max.ES, digits=5)
-            arg.ES <- which.max(RES)
-        } else{
-            ES <- signif(min.ES, digits=5)
-            arg.ES <- which.min(RES)
-        }
-    }
-
-    if( statistic == "area.under.RES"){
-        if( max.ES > -min.ES ){
-            arg.ES <- which.max(RES)
-        } else{
-            arg.ES <- which.min(RES)
-        }
-        gaps = gaps+1
-        RES = c(valleys,0) * (gaps) + 0.5*( c(0,RES[1:Nh]) - c(valleys,0) ) * (gaps)
-        ES = sum(RES)
-    }
-    gsea.results = list(ES = ES, arg.ES = arg.ES, RES = RES, indicator = tag.indicator)
-    ##cat('gsea.score: ')
-    ##cat(Sys.time()-tt, '/n')
-    return (gsea.results)
-}
-
 
 
 
