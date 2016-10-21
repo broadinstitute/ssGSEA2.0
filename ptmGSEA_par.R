@@ -52,7 +52,8 @@ ptmGSEA <- function (
   fdr.pvalue          = TRUE,    # output adjusted (FDR) p-values
   global.fdr          = FALSE,    # if TRUE calculate global FDR; else calculate FDR sample-by-sample
 
-  par=F
+  par=F,
+  spare.cores=1
 
 ) {
   ## single sample GSEA
@@ -74,6 +75,7 @@ ptmGSEA <- function (
     library(verification)
     library(RColorBrewer)
 
+    ###################################
     ## Read input dataset
     dataset <- MSIG.Gct2Frame(filename = input.ds)  # Read dataset (GCT format)
     m <- data.matrix(dataset$ds)
@@ -106,13 +108,14 @@ ptmGSEA <- function (
     }
 
     tt <- Sys.time()
+
     ###################################
     ## Read gene set databases
     GSDB <- vector('list', length(gene.set.databases))
     names(GSDB) <- gene.set.databases
 
     for (gsdb in gene.set.databases)
-        GSDB[[gsdb]] <- Read.GeneSets.db2(gsdb, thres.min = 2, thres.max = 2000)
+        GSDB[[gsdb]] <- Read.GeneSets.db2(gsdb, thres.min = min.overlap, thres.max = 2000)
 
     for(i in 1:length(GSDB)){
         if(i == 1){
@@ -129,31 +132,37 @@ ptmGSEA <- function (
             N.gs <- N.gs + GSDB[[i]]$N.gs
         }
     }
+    ###################################
+    ## calculate overlap
+    gs <- lapply(gs, function(x) intersect(x, gene.names))
+    size.ol.G <- sapply(gs, length)
+
+
     #############################
     ## convert list to matrix
-    gs.mat <- matrix(NA, nrow=length(gs), ncol=max(size.G ), dimnames=list(gs.names, 1:max(size.G)))
-    for(i in 1:nrow(gs.mat)){
-        gs.tmp <- gs[[i]]
-        gs.mat[i, 1:length(gs.tmp)] <- gs.tmp
-    }
+####    gs.mat <- matrix(NA, nrow=length(gs), ncol=max(size.G ), dimnames=list(gs.names, 1:max(size.G)))
+####    for(i in 1:nrow(gs.mat)){
+####        gs.tmp <- gs[[i]]
+####        gs.mat[i, 1:length(gs.tmp)] <- gs.tmp
+####    }
     cat('MSigDB import: ')
     cat(Sys.time()-tt, '\n')
 
     #############################################
     ## calculate the overlap
-    gs.mat <- t(apply(gs.mat, 1, function(x){
-        ol=intersect(x[!is.na(x)], gene.names)
-        c(ol, rep(NA, length(x)-length(ol)+1))
-    }))
+####    gs.mat <- t(apply(gs.mat, 1, function(x){
+####        ol=intersect(x[!is.na(x)], gene.names)
+####        c(ol, rep(NA, length(x)-length(ol)+1))
+####    }))
 
     #############################################
     ## remove gene sets with unsufficient overlap
-    size.ol.G <- apply(gs.mat, 1, function(x) sum(!is.na(x)))
+####    size.ol.G <- apply(gs.mat, 1, function(x) sum(!is.na(x)))
     ## index of gene sets to test
     keep.idx <- which(size.ol.G >= min.overlap)
 
     ## update all data
-    gs.mat <- gs.mat[keep.idx,]
+    ##gs.mat <- gs.mat[keep.idx,]
     gs.names <- gs.names[keep.idx]
     gs <- gs[keep.idx]
     gs.descs <- gs.descs[keep.idx]
@@ -167,13 +176,13 @@ ptmGSEA <- function (
     ## check for redundant signature sets
     gene.set.selection <- unique(gs.names)
     locs <- match(gene.set.selection, gs.names)
-
-    gs <- gs[locs]
-    gs.names <- gs.names[locs]
-    gs.descs <- gs.descs[locs]
-    size.G <- size.G[locs]
-    gs.mat <- gs.mat[locs,]
-
+    if(length(locs) < N.gs){
+        gs <- gs[locs]
+        gs.names <- gs.names[locs]
+        gs.descs <- gs.descs[locs]
+        size.G <- size.G[locs]
+        gs.mat <- gs.mat[locs,]
+    }
 
     tt <- Sys.time()
     ######################################################
@@ -203,8 +212,12 @@ ptmGSEA <- function (
         ## loop over columns
         for (sample.index in 1:n.cols) {
 
-            ## ranks of (normalized) expression values
+            ## order of ranks, list is now ordered, elements are locations of the ranks in
+            ## original data,
             gene.list <- order(data.array[, sample.index], decreasing=T)
+
+            ## locations of gene set in input data (before ranking/ordering)
+            ## 'gene.names' is in the same order as the input data
             gene.set2 <- match(gene.set, gene.names)
 
 
@@ -220,6 +233,9 @@ ptmGSEA <- function (
                 if (weight == 0) {
                     correl.vector <- rep(1, n.rows)
                 } else if (weight > 0) {
+                    ## if weighting is used, (weight > 0) bring
+                    ## 'correl.vector' into the same order
+                    ## as the ordered gene list
                     if (correl.type == "rank") {
                         correl.vector <- data.array[ordered.gene.list, sample.index]
                     } else if (correl.type == "symm.rank") {
@@ -235,7 +251,7 @@ ptmGSEA <- function (
                 #######################################
                 ## match gene set to data
                 tag.indicator <- sign(match(ordered.gene.list, gene.set2, nomatch=0))    # notice that the sign is 0 (no tag) or 1 (tag)
-                no.tag.indicator <- 1 - tag.indicator
+                ##no.tag.indicator <- 1 - tag.indicator
 
                 N=n.rows
                 ##N <- length(ordered.gene.list)
@@ -243,14 +259,17 @@ ptmGSEA <- function (
                 Nm <-  N - Nh
                 ##orig.correl.vector <- correl.vector
                 ##if (weight == 0) correl.vector <- rep(1, N)   # unweighted case
-                ind = which(tag.indicator==1)
-                correl.vector <- abs(correl.vector[ind])^weight
 
+                ## positions of gene set in ordered gene list
+                ind = which(tag.indicator==1)
+                ## 'correl.vector' is now the size of 'gene.set2'
+                correl.vector <- abs(correl.vector[ind])^weight
                 ## sum of weights
                 sum.correl = sum(correl.vector)
 
                 #########################################
                 ## determine peaks and valleys
+                ## divide correl vector by sum of weights
                 up = correl.vector/sum.correl     # "up" represents the peaks in the mountain plot
                 gaps = (c(ind-1, N) - c(0, ind))  # gaps between ranked pathway genes
                 down = gaps/Nm
@@ -334,6 +353,8 @@ ptmGSEA <- function (
         return(list(ES.vector = ES.vector, NES.vector =  NES.vector, p.val.vector = p.val.vector))
     } ## end function 'project.geneset'
 
+
+
     #####################################
     ## parallelized version
     if(par){
@@ -341,14 +362,15 @@ ptmGSEA <- function (
         require(foreach)
 
         ## register cores
-        cl <- makeCluster(detectCores()-1)
+        cl <- makeCluster(detectCores() - spare.cores)
         registerDoParallel(cl)
 
         ######################
         ## parallel loop
         tmp <-  foreach(gs.i = 1:N.gs) %dopar% {
 
-            gene.overlap <- gs.mat[gs.i, 1:size.ol.G[gs.i]]
+            ##gene.overlap <- gs.mat[gs.i, 1:size.ol.G[gs.i]]
+            gene.overlap <- gs[[gs.i]]
 
             if (output.score.type == "ES") {
                 OPAM <- project.geneset (data.array = m, gene.names = gene.names, n.cols = Ns, n.rows= Ng, weight = weight, statistic = statistic, gene.set = gene.overlap, nperm = 1, correl.type = correl.type)
@@ -358,7 +380,7 @@ ptmGSEA <- function (
         }
         OPAM
         }
-        stopCluster(cl)
+        on.exit(stopCluster(cl))
 
         ###################################
         ## serial loop
@@ -367,7 +389,8 @@ ptmGSEA <- function (
         tt <- Sys.time()
         tmp <- lapply(1:N.gs, function(gs.i){
 
-            gene.overlap <- gs.mat[gs.i, 1:size.ol.G[gs.i]]
+            ##gene.overlap <- gs.mat[gs.i, 1:size.ol.G[gs.i]]
+            gene.overlap <- gs[[gs.i]]
 
             if (output.score.type == "ES") {
                 OPAM <- project.geneset (data.array = m, gene.names = gene.names, n.cols = Ns, n.rows= Ng, weight = weight, statistic = statistic, gene.set = gene.overlap, nperm = 1, correl.type = correl.type)
@@ -400,9 +423,7 @@ ptmGSEA <- function (
     cat(Sys.time()-tt, '\n')
 
     ##locs <- !is.na(score.matrix[,1])
-
     ##N.gs <- sum(locs)
-
     ##score.matrix <- score.matrix[locs,]
     ##pval.matrix <- pval.matrix[locs,]
     ##gs.names <- gs.names[locs]
@@ -416,10 +437,12 @@ ptmGSEA <- function (
     other.entries <- 0
 
   if (combine.mode == "combine.off") {
-    score.matrix.2 <- score.matrix
-    pval.matrix.2 <- pval.matrix
-    gs.names.2 <- gs.names
-    gs.descs.2 <- gs.descs
+
+      score.matrix.2 <- score.matrix
+      pval.matrix.2 <- pval.matrix
+      gs.names.2 <- gs.names
+      gs.descs.2 <- gs.descs
+
   } else if ((combine.mode == "combine.replace") || (combine.mode == "combine.add")) {
     fisher.pval <- function(p) {
       Xsq <- -2*sum(log(p))
@@ -505,24 +528,33 @@ ptmGSEA <- function (
   print(paste("Total gene sets:", length(gs.names.2)))
   print(paste("Unique gene sets:", length(unique(gs.names.2))))
 
-  V.GCT <- data.frame(score.matrix.2)
-  names(V.GCT) <- sample.names
-  row.names(V.GCT) <- gs.names.2
-  write.gct.ssgsea(gct.data.frame=V.GCT, descs=gs.descs.2, filename=paste (output.prefix, '.gct', sep=''))
+    #################################################
+    ## score matrix
+    V.GCT <- data.frame(score.matrix.2)
+    names(V.GCT) <- sample.names
+    row.names(V.GCT) <- gs.names.2
+    write.gct.ssgsea(gct.data.frame=V.GCT, descs=gs.descs.2, filename=paste (output.prefix, '.gct', sep=''))
 
-  P.GCT <- data.frame(pval.matrix.2)
-  names(P.GCT) <- sample.names
-  row.names(P.GCT) <- gs.names.2
-  write.gct.ssgsea(gct.data.frame=P.GCT, descs=gs.descs.2, filename=paste (output.prefix, '-pvalues.gct', sep=''))
+    #################################################
+    ## p-value matrix
+    P.GCT <- data.frame(pval.matrix.2)
+    names(P.GCT) <- sample.names
+    row.names(P.GCT) <- gs.names.2
+    write.gct.ssgsea(gct.data.frame=P.GCT, descs=gs.descs.2, filename=paste (output.prefix, '-pvalues.gct', sep=''))
 
-  if (fdr.pvalue) {
-    F.GCT <- P.GCT
-    if (global.fdr)
-      F.GCT <- matrix ( p.adjust(unlist (F.GCT), method='fdr'),
-                        ncol=ncol(F.GCT))
-    else
-      for (i in 1:ncol(F.GCT)) F.GCT[,i] <- p.adjust (F.GCT[,i], method='fdr')
-    write.gct.ssgsea(gct.data.frame=F.GCT, descs=gs.descs.2, filename=paste (output.prefix, '-fdr-pvalues.gct', sep=''))
+    ##################################################
+    ## p-value correction
+    if (fdr.pvalue) {
+        F.GCT <- P.GCT
+        if (global.fdr)
+            F.GCT <- matrix ( p.adjust(unlist (F.GCT), method='fdr'),
+                             ncol=ncol(F.GCT))
+        else
+            for (i in 1:ncol(F.GCT))
+                F.GCT[,i] <- p.adjust (F.GCT[,i], method='fdr')
+
+        ## export
+        write.gct.ssgsea(gct.data.frame=F.GCT, descs=gs.descs.2, filename=paste (output.prefix, '-fdr-pvalues.gct', sep=''))
   }
 }
 

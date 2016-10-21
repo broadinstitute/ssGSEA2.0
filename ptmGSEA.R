@@ -192,6 +192,7 @@ ptmGSEA <- function (
 
         OPAM
     })
+
     tmp.pval <- lapply(tmp, function(x)x$p.val.vector)
     pval.matrix <- matrix(unlist(tmp.pval), byrow=T, nrow=N.gs)
     if (output.score.type == "ES"){
