@@ -147,30 +147,15 @@ ptmGSEA <- function (
         gs <- lapply(gs, function(x) intersect(x, gene.names))
     }
 
-    ###################################
-    ## overlap size
+    #############################################
+    ## calculate the overlap
     size.ol.G <- sapply(gs, length)
 
-    #############################
-    ## convert list to matrix
-####    gs.mat <- matrix(NA, nrow=length(gs), ncol=max(size.G ), dimnames=list(gs.names, 1:max(size.G)))
-####    for(i in 1:nrow(gs.mat)){
-####        gs.tmp <- gs[[i]]
-####        gs.mat[i, 1:length(gs.tmp)] <- gs.tmp
-####    }
     cat('MSigDB import: ')
     cat(Sys.time()-tt, '\n')
 
     #############################################
-    ## calculate the overlap
-####    gs.mat <- t(apply(gs.mat, 1, function(x){
-####        ol=intersect(x[!is.na(x)], gene.names)
-####        c(ol, rep(NA, length(x)-length(ol)+1))
-####    }))
-
-    #############################################
     ## remove gene sets with unsufficient overlap
-####    size.ol.G <- apply(gs.mat, 1, function(x) sum(!is.na(x)))
     ## index of gene sets to test
     keep.idx <- which(size.ol.G >= min.overlap)
 
@@ -309,112 +294,100 @@ ptmGSEA <- function (
                     ########################################
                     ## up-regulated part
                     ########################################
-                    up.idx <- which(gene.set.direction=='u')
+                    u.idx <- which(gene.set.direction=='u')
 
-                    ## number of 'up' features
-                    Nh.up <- length(up.idx)
-                    Nm.up <-  N - Nh.up
+                    ## number of 'u' features
+                    Nh.u <- length(u.idx)
+                    Nm.u <-  N - Nh.u
 
-                    if(Nh.up > 1){
+                    if(length(u.idx) > 1){
+
                         ## locations of 'up' features
-                        tag.up <- sign( match(ordered.gene.list, gene.set2[ up.idx ], nomatch=0) )
-                        ind.up = which(tag.up == 1)
+                        tag.u <- sign( match(ordered.gene.list, gene.set2[ u.idx ], nomatch=0) )
+                        ind.u = which(tag.u == 1)
 
                         ## extract and apply weighting
-                        correl.vector.up <- correl.vector[ind.up]
-                        correl.vector.up.sign <- sign(correl.vector.up)            ## direction of regulation
-                        correl.vector.up <- abs(correl.vector.up)^weight           ## weighting
-                        correl.vector.up <- correl.vector.up*correl.vector.up.sign ## multiply weight by sign of direction
+                        correl.vector.u <- correl.vector[ind.u]
+                        ##correl.vector.up.sign <- sign(correl.vector.up)            ## direction of regulation
+                        correl.vector.u <- abs(correl.vector.u)^weight           ## weighting
+                        ##correl.vector.up <- correl.vector.up*correl.vector.up.sign ## multiply weight by sign of direction
+                        sum.correl.u <- sum(correl.vector.u)
+                        up.u <- correl.vector.u/sum.correl.u
+                        gaps.u <- (c(ind.u-1, N) - c(0, ind.u))
+                        down.u <- gaps.u/Nm.u
 
-                        ## calculate score
-                        sum.correl.up = abs(sum(correl.vector.up))
-                        up.up = correl.vector.up/sum.correl.up     # "up" represents the peaks in the mountain plot
+                        RES.u <- cumsum(c(up.u,up.u[Nh.u])-down.u)
+                        valleys.u = RES.u[1:Nh.u]-up.u
 
-                        gaps.up = (c(ind.up-1, N) - c(0, ind.up))  # gaps between ranked pathway genes
-                        down.up = gaps.up/Nm.up
+                        max.ES.u = max(RES.u)
+                        min.ES.u = min(valleys.u)
 
-                        RES.up = cumsum(c(up.up,up.up[Nh.up])-down.up)
-                        valleys.up = RES.up[1:Nh.up]-up.up
-
-                        max.ES.up = max(RES.up)
-                        min.ES.up = min(valleys.up)
-
-                        ## calculate actual score
-                        score.up <- score(max.ES.up, min.ES.up, RES.up[1:Nh.up], gaps.up, valleys.up, statistic)
-                        ## extract score values
-                        ES.up <- score.up$ES
-                        arg.ES.up <- score.up$arg.ES
-                        RES.up <- score.up$RES
+                        ## calculate final score
+                        score.res <- score(max.ES.u, min.ES.u, RES.u[1:Nh.u], gaps.u, valleys.u, statistic)
+                        ES.u <- score.res$ES
+                        arg.ES.u <- score.res$arg.ES
+                        RES.u <- score.res$RES
 
                     } else {
-                        ES.up = 0
-                        arg.ES.up =0
-                        RES.up = 0
-                        tag.up = rep(0, N)
+                        correl.vector.u <- rep(0, N)
+                        ES.u=0
+                        RES.u=0
+                        ind.u=NULL
+                        arg.ES.u=NA
                     }
 
                     ## ######################################
                     ## down-regulated part
-tm                    ## ######################################
+                    ## ######################################
+                    d.idx <- which(gene.set.direction=='d')
+                    Nh.d <- length(d.idx)
+                    Nm.d <-  N - Nh.d
 
-                    down.idx <- which(gene.set.direction=='d')
+                    if(length(d.idx) > 1){
 
-                    ##  number of down-regulated features
-                    Nh.down <- length(down.idx)
-                    Nm.down <-  N - Nh.down
+                        ## locations of 'd' features
+                        tag.d <- sign( match(ordered.gene.list, gene.set2[ d.idx ], nomatch=0) )
+                        ind.d = which(tag.d == 1)
 
-                    if(Nh.down > 1){
+                        ## extract and apply weighting
+                        correl.vector.d <- correl.vector[ind.d]
+                        ##correl.vector.dp.sign <- sign(correl.vector.dp)            ## direction of regulation
+                        correl.vector.d <- abs(correl.vector.d)^weight           ## weighting
+                        ##correl.vector.dp <- correl.vector.dp*correl.vector.dp.sign ## multiply weight by sign of direction
+                        sum.correl.d <- sum(correl.vector.d)
+                        up.d <- correl.vector.d/sum.correl.d
+                        gaps.d <- (c(ind.d-1, N) - c(0, ind.d))
+                        down.d <- gaps.d/Nm.d
 
-                        ## reverse the order
-                        rev.ord.idx <- length(ordered.gene.list):1
-                        ordered.gene.list.rev <- ordered.gene.list[rev.ord.idx]
-                        correl.vector.rev <- correl.vector[rev.ord.idx]
+                        RES.d <- cumsum(c(up.d,up.d[Nh.d])-down.d)
+                        valleys.d = RES.d[1:Nh.d]-up.d
 
-                        ## locations of 'down' features
-                        tag.down <- sign( match(ordered.gene.list.rev, gene.set2[ down.idx ], nomatch=0) )
-                        ind.down = which(tag.down == 1)
+                        max.ES.d = max(RES.d)
+                        min.ES.d = min(valleys.d)
 
-                        ## ## extract feature data and apply weighting
-                        correl.vector.down <- correl.vector.rev[ind.down]
-                        correl.vector.down.sign <- sign(-correl.vector.down)
-
-                        correl.vector.down <- abs(correl.vector.down)^weight
-                        correl.vector.down <- correl.vector.down*correl.vector.down.sign
-
-                        sum.correl.down = abs(sum(correl.vector.down))
-
-                        up.down = correl.vector.down/sum.correl.down     # "up" represents the peaks in the mountain plot
-
-                        gaps.down = (c(ind.down-1, N) - c(0, ind.down))  # gaps between ranked pathway genes
-                        down.down = gaps.down/Nm.down
-
-                        RES.down = cumsum(c(up.down, up.down[Nh.down])-down.down)
-                        valleys.down = RES.down[1:Nh.down]-up.down
-
-                        max.ES.down = max(RES.down)
-                        min.ES.down = min(valleys.down)
-
-                        ## apply statistic, KM or AUC
-                        score.down <- score(max.ES.down, min.ES.down, RES.down[1:Nh.down], gaps.down, valleys.down, statistic)
+                        ## calculate final score
+                        score.res <- score(max.ES.d, min.ES.d, RES.d[1:Nh.d], gaps.d, valleys.d, statistic)
+                        ES.d <- score.res$ES
+                        arg.ES.d <- score.res$arg.ES
+                        RES.d <- score.res$RES
 
 
-                        ## extract score values
-                        ES.down <- score.down$ES
-                        arg.ES.down <- score.down$arg.ES
-                        RES.down <- score.down$RES
                     } else {
-                        ES.down <- 0
-                        arg.ES.down <- 0
-                        RES.down <- 0
-                        tag.down <- rep(0, N)
+                        correl.vector.d <- rep(0, N)
+                        ES.d=0
+                        RES.d=0
+                        ind.d=NULL
+                        arg.ES.d=NA
                     }
-
                     ## ###########################
                     ## combine the results
-                    ES = ES.down + ES.up
-                    arg.ES <- list(up=arg.ES.up, down=arg.ES.down)
-                    RES <- list(up=RES.up, down=RES.down)
-                    tag.indicator <- list(up=tag.up, down=tag.down)
+                    ES <- ES.u - ES.d
+                    RES <- list(u=RES.u, d=RES.d)
+                    arg.ES <- c(arg.ES.u, arg.ES.d)
+                    tag.indicator <- rep(0, N)
+                    if(!is.null(ind.u))tag.indicator[ind.u] <- 1
+                    if(!is.null(ind.d))tag.indicator[ind.d] <- -1
+                    gsea.results = list(ES = ES, arg.ES = arg.ES, RES = RES, indicator = tag.indicator)
 
                     ## ##############################################################
                     ##
@@ -422,6 +395,8 @@ tm                    ## ######################################
                     ##
                     ## ##############################################################
                 } else {
+                    Nh <- length(gene.set2)
+                    Nm <-  N - Nh
 
                    ## #####################################
                    ## match gene set to data
@@ -447,38 +422,15 @@ tm                    ## ######################################
                     min.ES = min(valleys)
 
                     ## calculate final score
-                    score.res <- score(max.ES, min.ES, RES.down[1:Nh], gaps, valleys, statistic)
+                    score.res <- score(max.ES, min.ES, RES[1:Nh], gaps, valleys, statistic)
+
                     ES <- score.res$ES
-                    ES.arg <- score.res$ES.arg
+                    arg.ES <- score.res$arg.ES
                     RES <- score.res$RES
 
-                    #########################################
-                    ## calculate score
-                    ## KM
-                   ## if( statistic == "Kolmogorov-Smirnov" ){
-                   ##     if( max.ES > -min.ES ){
-                   ##         ES <- signif(max.ES, digits=5)
-                   ##         arg.ES <- which.max(RES)
-                   ##     } else{
-                   ##         ES <- signif(min.ES, digits=5)
-                   ##         arg.ES <- which.min(RES)
-                   ##     }
-                   ## }
-                    ## AUC
-                    ##if( statistic == "area.under.RES"){
-                    ##    if( max.ES > -min.ES ){
-                    ##        arg.ES <- which.max(RES)
-                    ##    } else{
-                    ##        arg.ES <- which.min(RES)
-                    ##    }
-                    ##    gaps = gaps+1
-                    ##    RES = c(valleys,0) * (gaps) + 0.5*( c(0,RES[1:Nh]) - c(valleys,0) ) * (gaps)
-                    ##    ES = sum(RES)
-                    ##}
-
+                    gsea.results = list(ES = ES, arg.ES = arg.ES, RES = RES, indicator = tag.indicator)
                 } ## end else
 
-                gsea.results = list(ES = ES, arg.ES = arg.ES, RES = RES, indicator = tag.indicator)
                 return (gsea.results)
             } ## end function 'gsea.score'
 
@@ -533,10 +485,6 @@ tm                    ## ######################################
         return(list(ES.vector = ES.vector, NES.vector =  NES.vector, p.val.vector = p.val.vector))
     } ## end function 'project.geneset'
 
-
-    ##debug(project.geneset)
-
-
     #####################################
     ## multicore version
     if(par){
@@ -573,9 +521,7 @@ tm                    ## ######################################
 
         tt <- Sys.time()
         tmp <- lapply(1:N.gs, function(gs.i){
-            cat(gs.i, '\n')
-
-            ##gene.overlap <- gs.mat[gs.i, 1:size.ol.G[gs.i]]
+            ##cat(gs.i, '\n')
             gene.overlap <- gs[[gs.i]]
             if(!is.null(gs.direction))
                 gene.set.direction <- gs.direction[[gs.i]]
@@ -609,13 +555,6 @@ tm                    ## ######################################
 
     cat('main loop: ')
     cat(Sys.time()-tt, '\n')
-
-    ##locs <- !is.na(score.matrix[,1])
-    ##N.gs <- sum(locs)
-    ##score.matrix <- score.matrix[locs,]
-    ##pval.matrix <- pval.matrix[locs,]
-    ##gs.names <- gs.names[locs]
-    ##gs.descs <- gs.descs[locs]
 
     initial.up.entries <- 0
     final.up.entries <- 0

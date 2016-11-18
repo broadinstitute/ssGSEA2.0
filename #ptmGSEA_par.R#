@@ -1,4 +1,4 @@
-﻿## 20161013 karsten krug
+## 20161013 karsten krug
 ## try to adapt the code to:
 ##   1) work with site specific siganture sets
 ##   2) take directionality of regulation into account
@@ -147,35 +147,19 @@ ptmGSEA <- function (
         gs <- lapply(gs, function(x) intersect(x, gene.names))
     }
 
-    ###################################
-    ## overlap size
+    #############################################
+    ## calculate the overlap
     size.ol.G <- sapply(gs, length)
 
-    #############################
-    ## convert list to matrix
-####    gs.mat <- matrix(NA, nrow=length(gs), ncol=max(size.G ), dimnames=list(gs.names, 1:max(size.G)))
-####    for(i in 1:nrow(gs.mat)){
-####        gs.tmp <- gs[[i]]
-####        gs.mat[i, 1:length(gs.tmp)] <- gs.tmp
-####    }
     cat('MSigDB import: ')
     cat(Sys.time()-tt, '\n')
 
     #############################################
-    ## calculate the overlap
-####    gs.mat <- t(apply(gs.mat, 1, function(x){
-####        ol=intersect(x[!is.na(x)], gene.names)
-####        c(ol, rep(NA, length(x)-length(ol)+1))
-####    }))
-
-    #############################################
     ## remove gene sets with unsufficient overlap
-####    size.ol.G <- apply(gs.mat, 1, function(x) sum(!is.na(x)))
     ## index of gene sets to test
     keep.idx <- which(size.ol.G >= min.overlap)
 
     ## update all data
-    ##gs.mat <- gs.mat[keep.idx,]
     gs.names <- gs.names[keep.idx]
     gs <- gs[keep.idx]
     gs.descs <- gs.descs[keep.idx]
@@ -232,7 +216,6 @@ ptmGSEA <- function (
         ## locations of gene set in input data (before ranking/ordering)
         ## 'gene.names' is in the same order as the input data
         gene.set2 <- match(gene.set, gene.names)
-
 
         ## loop over columns
         for (sample.index in 1:n.cols) {
@@ -410,10 +393,8 @@ ptmGSEA <- function (
                     ##
                     ## ##############################################################
                 } else {
-
- 			Nh <- length(ordered.gene.list)
-                    	Nm <-  N - Nh
-
+                    Nh <- length(gene.set2)
+                    Nm <-  N - Nh
 
                    ## #####################################
                    ## match gene set to data
@@ -502,10 +483,6 @@ ptmGSEA <- function (
         return(list(ES.vector = ES.vector, NES.vector =  NES.vector, p.val.vector = p.val.vector))
     } ## end function 'project.geneset'
 
-
-    ##debug(project.geneset)
-
-
     #####################################
     ## multicore version
     if(par){
@@ -543,8 +520,6 @@ ptmGSEA <- function (
         tt <- Sys.time()
         tmp <- lapply(1:N.gs, function(gs.i){
             ##cat(gs.i, '\n')
-
-            ##gene.overlap <- gs.mat[gs.i, 1:size.ol.G[gs.i]]
             gene.overlap <- gs[[gs.i]]
             if(!is.null(gs.direction))
                 gene.set.direction <- gs.direction[[gs.i]]
@@ -578,13 +553,6 @@ ptmGSEA <- function (
 
     cat('main loop: ')
     cat(Sys.time()-tt, '\n')
-
-    ##locs <- !is.na(score.matrix[,1])
-    ##N.gs <- sum(locs)
-    ##score.matrix <- score.matrix[locs,]
-    ##pval.matrix <- pval.matrix[locs,]
-    ##gs.names <- gs.names[locs]
-    ##gs.descs <- gs.descs[locs]
 
     initial.up.entries <- 0
     final.up.entries <- 0
