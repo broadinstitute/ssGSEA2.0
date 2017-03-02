@@ -75,8 +75,9 @@ ptmGSEA <- function (
     library(verification)
     library(RColorBrewer)
 
-    ###################################
-    ## Read input dataset
+    ## ####################################################
+    ##            import dataset
+    ## ####################################################
     dataset <- MSIG.Gct2Frame(filename = input.ds)  # Read dataset (GCT format)
     m <- data.matrix(dataset$ds)
     gene.names <- dataset$row.names ## gene names or PTM sites, e.g. Q9HAW4;S839-ph
@@ -89,28 +90,10 @@ ptmGSEA <- function (
     ## Extract input file name
     input.file.prefix <-  sub('.*/(.*)\\.gct$', '\\1', input.ds)
 
-    ###################################
-    ## Sample normalization
-    if (sample.norm.type == "rank") {
-        m <- apply(m, 2, rank, ties.method = "average")
-        m <- 10000*m/Ng
 
-    } else if (sample.norm.type == "log.rank") {
-        m <- apply(m, 2, rank, ties.method = "average")
-        m <- log(10000*m/Ng + exp(1))
-
-    } else if (sample.norm.type == "log") {
-        m[m < 1] <- 1
-        m <- log(m + exp(1))
-
-    } else if (sample.norm.type == "none") {
-        ## keep original value -- do not transform
-    }
-
-    tt <- Sys.time()
-
-    ###################################
-    ## Read gene set databases
+    ## ###################################################
+    ##         import gene set databases
+    ## ###################################################
     GSDB <- vector('list', length(gene.set.databases))
     names(GSDB) <- gene.set.databases
 
@@ -133,10 +116,49 @@ ptmGSEA <- function (
         }
     }
 
-    ###################################
-    ## calculate overlap
-    ## in case of PTM signatures extract
-    ## the directionality information
+
+    ## ####################################################
+    ##            Sample normalization
+    ## -take care of missing values already here
+    ## ####################################################
+    if (sample.norm.type == "rank") {
+        ##m <- apply(m, 2, rank, ties.method = "average")
+        m <- apply(m, 2, function(x){
+            x.rank=rep(NA, length(x))
+            keep.idx=which(!is.na(x))
+            x.rank[keep.idx ]=rank(x[keep.idx], ties.method="average")
+            return(x.rank)
+        })
+
+        m <- 10000*m/Ng
+
+    } else if (sample.norm.type == "log.rank") {
+        ## m <- apply(m, 2, rank, ties.method = "average")
+        ##m <- apply(m, 2, function(x) rank(x[which(!is.na(x))], ties.method="average"))
+        m <- apply(m, 2, function(x){
+            x.rank=rep(NA, length(x))
+            keep.idx=which(!is.na(x))
+            x.rank[keep.idx ]=rank(x[keep.idx], ties.method="average")
+            return(x.rank)
+        })
+        m <- log(10000*m/Ng + exp(1))
+
+    } else if (sample.norm.type == "log") {
+        m[m < 1] <- 1
+        m <- log(m + exp(1))
+
+    } ##else if (sample.norm.type == "none") {
+        ## keep original value -- do not transform
+    ##}
+
+    tt <- Sys.time()
+
+    ## ####################################################
+    ## calculate overlap between rownames of the dataset and
+    ## the each gene set
+    ## - in case of PTM signatures extract
+    ##   the directionality information
+    ## ####################################################
     if(length(grep(';u|;d', gs[[1]])) > 0 ){
         gs <- lapply(gs, function(x) x[ sub(';u$|;d$','', x) %in% gene.names ])
         gs.direction <- lapply(gs, function(x) sub('^.*;(d|u)$', '\\1', x))
@@ -164,7 +186,7 @@ ptmGSEA <- function (
     if(length(keep.idx) == 0)
         stop('No overlap to any gene sets found in your data set!\nPossible reasons: 1) organism other than human; 2) wrong format of gene names/site ids!\n')
 
-
+    ## #####################################################
     ## update all data
     gs.names <- gs.names[keep.idx]
     gs <- gs[keep.idx]
@@ -178,10 +200,9 @@ ptmGSEA <- function (
     ## final number of gene sets to test
     N.gs <- length(keep.idx)
 
-
     cat('Testing', length(keep.idx), 'gene sets:\n')
 
-    ###########################################
+    ## #########################################
     ## check for redundant signature sets
     gene.set.selection <- unique(gs.names)
     locs <- match(gene.set.selection, gs.names)
@@ -194,12 +215,13 @@ ptmGSEA <- function (
     }
 
     tt <- Sys.time()
-    ######################################################
-    ##
-    ##   function executed per gene set
-    ##
-    ######################################################
-    project.geneset <- function (data.array,
+
+######################################################
+##
+##   function executed per gene set
+##
+######################################################
+project.geneset <- function (data.array,
                              gene.names,
                              n.cols,
                              n.rows,
@@ -208,41 +230,17 @@ ptmGSEA <- function (
                              gene.set,
                              nperm = 200,
                              correl.type  = "rank",              ## "rank", "z.score", "symm.rank"
-                             gene.set.direction=NULL             ## direction of regulation; should be in same order than
-                                                                 ## 'gene.set'
+                             gene.set.direction=NULL,             ## direction of regulation; should be in same order than 'gene.set'
+                             min.overlap
                              ) {
 
-        ## fast implementation of GSEA
-        ES.vector <- NES.vector <- p.val.vector <- vector('numeric', n.cols)
-        correl.vector <- vector("numeric", n.rows)
-
-        ## Compute ES score for signatures in each sample
-        phi <- array(0, c(n.cols, nperm))
-
-        ## list to store random walk accross samples
-        random.walk <- vector('list', n.cols)
-
-
-        ## locations of gene set in input data (before ranking/ordering)
-        ## 'gene.names' is in the same order as the input data
-        gene.set2 <- match(gene.set, gene.names)
-
-        ## loop over columns
-        for (sample.index in 1:n.cols) {
-            ##cat(sample.index, ' ')
-
-            ## order of ranks, list is now ordered, elements are locations of the ranks in
-            ## original data,
-            gene.list <- order(data.array[, sample.index], decreasing=T)
-
-
-            ###############################################################################
+       ###############################################################################
             ##
             ##           function to calculate GSEA enrichment score
             ## - apply correlation scheme and weighting
             ## - calculate ES
             ##############################################################################
-            gsea.score <- function (ordered.gene.list) {
+            gsea.score <- function (ordered.gene.list, gene.set2, weight, n.rows, correl.type, gene.set.direction ) {
 
                 ##################################################################
                 ## fuunction to calculate ES score
@@ -284,14 +282,19 @@ ptmGSEA <- function (
                     ## 'correl.vector' into the same order
                     ## as the ordered gene list
                     if (correl.type == "rank") {
-                        correl.vector <- data.array[ordered.gene.list, sample.index]
+                        ##correl.vector <- data.array[ordered.gene.list, sample.index]
+                        correl.vector <- data.expr[ordered.gene.list]
+
                     } else if (correl.type == "symm.rank") {
-                        correl.vector <- data.array[ordered.gene.list, sample.index]
+                        ##correl.vector <- data.array[ordered.gene.list, sample.index]
+                        correl.vector <- data.expr[ordered.gene.list]
+
                         correl.vector <- ifelse(correl.vector > correl.vector[ceiling(n.rows/2)],
                                                 correl.vector,
                                                 correl.vector + correl.vector - correl.vector[ceiling(n.rows/2)])
                     } else if (correl.type == "z.score") {
-                        x <- data.array[ordered.gene.list, sample.index]
+                        ##x <- data.array[ordered.gene.list, sample.index]
+                        x <- data.expr[ordered.gene.list]
                         correl.vector <- (x - mean(x))/sd(x)
                     }
                 }
@@ -299,7 +302,7 @@ ptmGSEA <- function (
                 ## length of gene list - equals number of rows in input matrix
                 N = length(ordered.gene.list)
 
-                #######################################
+                ## #####################################
                 ## directionality of the gene set
                 if(!is.null(gene.set.direction)){
 
@@ -455,54 +458,108 @@ ptmGSEA <- function (
 
                 return (gsea.results)
             } ## end function 'gsea.score'
+            ## #######################################################################################################################################################
 
-            ## calculate enrichment score
-            GSEA.results <- gsea.score (gene.list)
-            ES.vector[sample.index] <- GSEA.results$ES
 
-            ## store the gsea results to
-            random.walk[[sample.index]] <- GSEA.results
+        ## fast implementation of GSEA
+        ##ES.vector <- NES.vector <- p.val.vector <- vector('numeric', n.cols)
+        ##correl.vector <- vector("numeric", n.rows)
+        ES.vector <- NES.vector <- p.val.vector <- rep(NA, n.cols)
+        correl.vector <- rep(NA, n.rows)
 
-            ################################################
-            ## no permutations: - ES and NES are the same
-            ##                  - all p-values are 1
-            if (nperm == 0) {
-                NES.vector[sample.index] <- ES.vector[sample.index]
-                p.val.vector[sample.index] <- 1
+        ## Compute ES score for signatures in each sample
+        phi <- array(NA, c(n.cols, nperm))
 
-            ################################################
-            ## do permutations
+        ## list to store random walk accross samples
+        random.walk <- vector('list', n.cols)
+
+        ## locations of gene set in input data (before ranking/ordering)
+        ## 'gene.names' is in the same order as the input data
+        ##gene.set2 <- match(gene.set, gene.names)
+        gene.names.all <- gene.names
+
+        ## loop over columns/samples
+        for (sample.index in 1:n.cols) {
+
+            ## ######################################################
+            ##         handle missing values appropriatly
+            ## ######################################################
+            gene.names <- gene.names.all
+
+            ## extract expression values of current sample
+            data.expr <- data.array[, sample.index]
+
+            ## index of missing values
+            na.idx <- which( is.na(data.expr) | is.infinite(data.expr) )
+            if( length(na.idx) > 0){
+                data.expr <- data.expr[-na.idx]
+                gene.names <- gene.names[-na.idx]
+                n.rows=length(data.expr)
+                gene.set <- gene.set[gene.set %in% gene.names]
+
+                cat('L=', length(gene.set), '\n')
+            }
+            if(length(gene.set) < min.overlap){
+                ##ES.vector[sample.index] <- ES.vector[sample.index] <- p.val.vector[sample.index] <- NA
+                random.walk[[sample.index]] <- NA
             } else {
 
-                ES.tmp = sapply(1:nperm,  function(x) gsea.score(sample(1:n.rows))$ES)
-                phi[sample.index, ] <- unlist(ES.tmp)
+                ## locations of gene set in input data (before ranking/ordering)
+                ## 'gene.names' is in the same order as the input data
+                gene.set2 <- match(gene.set, gene.names)
 
-                #########################################################
-                ## calculate NES and p-values
-                if (ES.vector[sample.index] >= 0) {
-                    pos.phi <- phi[sample.index, phi[sample.index, ] >= 0]
-                    if (length(pos.phi) == 0) pos.phi <- 0.5
-                    pos.m <- mean(pos.phi)
-                    NES.vector[sample.index] <- ES.vector[sample.index]/pos.m
-                    s <- sum(pos.phi >= ES.vector[sample.index])/length(pos.phi)
-                    p.val.vector[sample.index] <- ifelse(s == 0, 1/nperm, s)
+                ## order of ranks, list is now ordered, elements are locations of the ranks in
+                ## original data,
+                ##gene.list <- order(data.array[, sample.index], decreasing=T)
+                gene.list <- order(data.expr, decreasing=T)
 
+
+                ## ##############################################
+                ## calculate enrichment score
+                GSEA.results <- gsea.score (gene.list, gene.set2, weight, n.rows, correl.type, gene.set.direction)
+                ES.vector[sample.index] <- GSEA.results$ES
+
+                ## store the gsea results to
+                random.walk[[sample.index]] <- GSEA.results
+
+                ## ##############################################
+                ## no permutations: - ES and NES are the same
+                ##                  - all p-values are 1
+                if (nperm == 0) {
+                    NES.vector[sample.index] <- ES.vector[sample.index]
+                    p.val.vector[sample.index] <- 1
+
+                    ## ##############################################
+                    ## do permutations
                 } else {
-                    neg.phi <-  phi[sample.index, phi[sample.index, ] < 0]
-                    if (length(neg.phi) == 0) neg.phi <- 0.5
-                    neg.m <- mean(neg.phi)
-                    NES.vector[sample.index] <- ES.vector[sample.index]/abs(neg.m)
-                    s <- sum(neg.phi <= ES.vector[sample.index])/length(neg.phi)
-                    p.val.vector[sample.index] <- ifelse(s == 0, 1/nperm, s)
+
+                    ES.tmp = sapply(1:nperm,  function(x) gsea.score(sample(1:n.rows), gene.set2, weight, n.rows, correl.type, gene.set.direction)$ES)
+                    phi[sample.index, ] <- unlist(ES.tmp)
+
+                    ## #######################################################
+                    ## calculate NES and p-values
+                    if (ES.vector[sample.index] >= 0) {
+                        pos.phi <- phi[sample.index, phi[sample.index, ] >= 0]
+                        if (length(pos.phi) == 0) pos.phi <- 0.5
+                        pos.m <- mean(pos.phi)
+                        NES.vector[sample.index] <- ES.vector[sample.index]/pos.m
+                        s <- sum(pos.phi >= ES.vector[sample.index])/length(pos.phi)
+                        p.val.vector[sample.index] <- ifelse(s == 0, 1/nperm, s)
+
+                    } else {
+                        neg.phi <-  phi[sample.index, phi[sample.index, ] < 0]
+                        if (length(neg.phi) == 0) neg.phi <- 0.5
+                        neg.m <- mean(neg.phi)
+                        NES.vector[sample.index] <- ES.vector[sample.index]/abs(neg.m)
+                        s <- sum(neg.phi <= ES.vector[sample.index])/length(neg.phi)
+                        p.val.vector[sample.index] <- ifelse(s == 0, 1/nperm, s)
+                    }
                 }
             }
         }
         return(list(ES.vector = ES.vector, NES.vector =  NES.vector, p.val.vector = p.val.vector, random.walk = random.walk))
     } ## end function 'project.geneset'
-
-
-
-
+    ## ##########################################################################################################################################
 
     #####################################
     ## multicore version
@@ -518,7 +575,7 @@ ptmGSEA <- function (
         ## parallel loop
         tmp <-  foreach(gs.i = 1:N.gs) %dopar% {
 
-            cat( (gs.i / N.gs)*100, '%\n')
+            ##cat( (gs.i / N.gs)*100, '%\n')
 
             gene.overlap <- gs[[gs.i]]
 
@@ -526,10 +583,10 @@ ptmGSEA <- function (
                 gene.set.direction <- gs.direction[[gs.i]]
 
             if (output.score.type == "ES") {
-                OPAM <- project.geneset (data.array = m, gene.names = gene.names, n.cols = Ns, n.rows= Ng, weight = weight, statistic = statistic, gene.set = gene.overlap, nperm = 0, correl.type = correl.type, gene.set.direction = gene.set.direction)
+                OPAM <- project.geneset (data.array = m, gene.names = gene.names, n.cols = Ns, n.rows= Ng, weight = weight, statistic = statistic, gene.set = gene.overlap, nperm = 0, correl.type = correl.type, gene.set.direction = gene.set.direction, min.overlap = min.overlap)
                 ##    score.matrix[gs.i,] <- OPAM$ES.vector
             } else if (output.score.type == "NES") {
-                OPAM <- project.geneset (data.array = m, gene.names = gene.names, n.cols = Ns, n.rows= Ng, weight = weight, statistic = statistic, gene.set = gene.overlap, nperm = nperm, correl.type = correl.type, gene.set.direction = gene.set.direction)
+                OPAM <- project.geneset (data.array = m, gene.names = gene.names, n.cols = Ns, n.rows= Ng, weight = weight, statistic = statistic, gene.set = gene.overlap, nperm = nperm, correl.type = correl.type, gene.set.direction = gene.set.direction, min.overlap = min.overlap)
         }
         OPAM
         }
@@ -553,10 +610,10 @@ ptmGSEA <- function (
                 gene.set.direction <- gs.direction[[gs.i]]
 
             if (output.score.type == "ES") {
-                OPAM <- project.geneset (data.array = m, gene.names = gene.names, n.cols = Ns, n.rows= Ng, weight = weight, statistic = statistic, gene.set = gene.overlap, nperm = 1, correl.type = correl.type, gene.set.direction = gene.set.direction)
+                OPAM <- project.geneset (data.array = m, gene.names = gene.names, n.cols = Ns, n.rows= Ng, weight = weight, statistic = statistic, gene.set = gene.overlap, nperm = 1, correl.type = correl.type, gene.set.direction = gene.set.direction, min.overlap = min.overlap)
 
             } else if (output.score.type == "NES") {
-                OPAM <- project.geneset (data.array = m, gene.names = gene.names, n.cols = Ns, n.rows= Ng, weight = weight, statistic = statistic, gene.set = gene.overlap, nperm = nperm, correl.type = correl.type, gene.set.direction = gene.set.direction)
+                OPAM <- project.geneset (data.array = m, gene.names = gene.names, n.cols = Ns, n.rows= Ng, weight = weight, statistic = statistic, gene.set = gene.overlap, nperm = nperm, correl.type = correl.type, gene.set.direction = gene.set.direction, min.overlap = min.overlap)
 
             }
         OPAM
@@ -578,7 +635,7 @@ ptmGSEA <- function (
         tmp.nes <- lapply(tmp, function(x)x$NES.vector)
         score.matrix <- matrix(unlist(tmp.nes), byrow=T, nrow=N.gs)
     }
-
+    ##View(score.matrix)
     random.walk <- lapply(tmp, function(x) x$random.walk)
 
 
@@ -592,31 +649,31 @@ ptmGSEA <- function (
     combined.entries <- 0
     other.entries <- 0
 
-  if (combine.mode == "combine.off") {
+    if (combine.mode == "combine.off") {
 
-      score.matrix.2 <- score.matrix
-      pval.matrix.2 <- pval.matrix
-      gs.names.2 <- gs.names
-      gs.descs.2 <- gs.descs
+        score.matrix.2 <- score.matrix
+        pval.matrix.2 <- pval.matrix
+        gs.names.2 <- gs.names
+        gs.descs.2 <- gs.descs
 
-  } else if ((combine.mode == "combine.replace") || (combine.mode == "combine.add")) {
-    fisher.pval <- function(p) {
-      Xsq <- -2*sum(log(p))
-      p.val <- pchisq(Xsq, df = 2*length(p), lower.tail = FALSE)
-      return(p.val)
-    }
+    } else if ((combine.mode == "combine.replace") || (combine.mode == "combine.add")) {
+      fisher.pval <- function(p) {
+          Xsq <- -2*sum(log(p))
+          p.val <- pchisq(Xsq, df = 2*length(p), lower.tail = FALSE)
+          return(p.val)
+      }
 
-    score.matrix.2 <- NULL
-    pval.matrix.2 <- NULL
-    gs.names.2 <- NULL
-    gs.descs.2 <- NULL
+      score.matrix.2 <- NULL
+      pval.matrix.2 <- NULL
+      gs.names.2 <- NULL
+      gs.descs.2 <- NULL
 
-    add.entry.2 <- function (s, p, n, d) {
-      score.matrix.2 <<- rbind (score.matrix.2, s)
-      pval.matrix.2 <<- rbind (pval.matrix.2, p)
-      gs.names.2 <<- c (gs.names.2, n)
-      gs.descs.2 <<- c (gs.descs.2, d)
-    }
+      add.entry.2 <- function (s, p, n, d) {
+          score.matrix.2 <<- rbind (score.matrix.2, s)
+          pval.matrix.2 <<- rbind (pval.matrix.2, p)
+          gs.names.2 <<- c (gs.names.2, n)
+          gs.descs.2 <<- c (gs.descs.2, d)
+      }
 
     k <- 1
     for (i in 1:N.gs) {
@@ -690,6 +747,7 @@ ptmGSEA <- function (
     names(V.GCT) <- sample.names
     row.names(V.GCT) <- gs.names.2
     write.gct.ssgsea(gct.data.frame=V.GCT, descs=gs.descs.2, filename=paste (output.prefix, '.gct', sep=''))
+    ##View(V.GCT)
 
     #################################################
     ## p-value matrix
@@ -716,6 +774,9 @@ ptmGSEA <- function (
     return(random.walk)
 }
 
+
+
+
 ##########################################################################################
 ##
 ## Support Functions
@@ -730,10 +791,16 @@ ptmGSEA <- function (
 #############################################################
 MSIG.Gct2Frame <- function(filename = "NULL") {
 
-  ds <- read.delim (filename, header=T, sep="\t", skip=2, row.names=1, blank.lines.skip=T, comment.char="", as.is=T)
-  descs <- ds[,1]
-  ds <- ds[-1]
-  row.names <- row.names(ds)
+    ##KK 20161208
+    ##ds <- read.delim (filename, header=T, sep="\t", skip=2, row.names=1, blank.lines.skip=T, comment.char="", as.is=T)
+    ds <- read.delim (filename, header=T, sep="\t", skip=2, row.names=NULL, blank.lines.skip=T, comment.char="", as.is=T)
+
+    descs <- ds[,2]
+    ##row.names <- row.names(ds)
+    row.names <- ds[,1]
+
+    ds <- ds[,-c(1,2)]
+
   names <- names(ds)
   return (list (ds = ds, row.names = row.names, descs = descs, names = names))
 }
@@ -811,7 +878,7 @@ write.gct.ssgsea <- function(gct.data.frame, descs = "", filename)
     m[, index] <- gct.data.frame[, i]
     index <- index + 1
   }
-  write.table(m, file = f, append = TRUE, quote = FALSE, sep = "\t", eol = "\n", col.names = FALSE, row.names = FALSE)
+  write.table(m, file = f, append = TRUE, quote = FALSE, sep = "\t", eol = "\n", col.names = FALSE, row.names = FALSE, na='')
   close(f)
   options(warn = 0)
 }
