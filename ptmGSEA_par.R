@@ -80,7 +80,8 @@ ptmGSEA <- function (
     ## ####################################################
     dataset <- MSIG.Gct2Frame(filename = input.ds)  # Read dataset (GCT format)
     m <- data.matrix(dataset$ds)
-    gene.names <- toupper(dataset$row.names) ## gene names or PTM sites, e.g. Q9HAW4;S839-ph
+    ##gene.names <- toupper(dataset$row.names) ## gene names or PTM sites, e.g. Q9HAW4;S839-ph
+    gene.names <- dataset$row.names
     gene.descs <- dataset$descs
     sample.names <- dataset$names
 
@@ -216,6 +217,9 @@ ptmGSEA <- function (
 
     tt <- Sys.time()
 
+
+
+
 ######################################################
 ##
 ##   function executed per gene set
@@ -234,13 +238,13 @@ project.geneset <- function (data.array,
                              min.overlap
                              ) {
 
-       ###############################################################################
+               ###############################################################################
             ##
             ##           function to calculate GSEA enrichment score
             ## - apply correlation scheme and weighting
             ## - calculate ES
             ##############################################################################
-            gsea.score <- function (ordered.gene.list, gene.set2, weight, n.rows, correl.type, gene.set.direction ) {
+            gsea.score <- function (ordered.gene.list, gene.set2, weight, n.rows, correl.type, gene.set.direction, data.expr ) {
 
                 ##################################################################
                 ## fuunction to calculate ES score
@@ -418,7 +422,7 @@ project.geneset <- function (data.array,
                     ##      original ssGSEA code without directionality
                     ##
                     ## ##############################################################
-                } else {
+                } else { ## end  if(!is.null(gene.set.direction))
 
                     Nh <- length(gene.set2)
                     Nm <-  N - Nh
@@ -494,8 +498,13 @@ project.geneset <- function (data.array,
             if( length(na.idx) > 0){
                 data.expr <- data.expr[-na.idx]
                 gene.names <- gene.names[-na.idx]
+
                 n.rows=length(data.expr)
-                gene.set <- gene.set[gene.set %in% gene.names]
+
+                gene.set.no.na <- which(gene.set %in% gene.names)
+
+                gene.set <- gene.set[ gene.set.no.na ]
+                gene.set.direction <- gene.set.direction[ gene.set.no.na ]
 
                 cat('L=', length(gene.set), '\n')
             }
@@ -516,7 +525,7 @@ project.geneset <- function (data.array,
 
                 ## ##############################################
                 ## calculate enrichment score
-                GSEA.results <- gsea.score (gene.list, gene.set2, weight, n.rows, correl.type, gene.set.direction)
+                GSEA.results <- gsea.score (gene.list, gene.set2, weight, n.rows, correl.type, gene.set.direction, data.expr)
                 ES.vector[sample.index] <- GSEA.results$ES
 
                 ## store the gsea results to
@@ -533,7 +542,7 @@ project.geneset <- function (data.array,
                     ## do permutations
                 } else {
 
-                    ES.tmp = sapply(1:nperm,  function(x) gsea.score(sample(1:n.rows), gene.set2, weight, n.rows, correl.type, gene.set.direction)$ES)
+                    ES.tmp = sapply(1:nperm,  function(x) gsea.score(sample(1:n.rows), gene.set2, weight, n.rows, correl.type, gene.set.direction, data.expr)$ES)
                     phi[sample.index, ] <- unlist(ES.tmp)
 
                     ## #######################################################
@@ -559,7 +568,10 @@ project.geneset <- function (data.array,
         }
         return(list(ES.vector = ES.vector, NES.vector =  NES.vector, p.val.vector = p.val.vector, random.walk = random.walk))
     } ## end function 'project.geneset'
-    ## ##########################################################################################################################################
+    ## ######################################################################################################
+
+
+
 
     #####################################
     ## multicore version
@@ -716,6 +728,9 @@ project.geneset <- function (data.array,
         other.entries <- other.entries + 1
       }
     } # end for loop over gene sets
+
+
+
     print(paste("initial.up.entries:", initial.up.entries))
     print(paste("final.up.entries:", final.up.entries))
     print(paste("initial.dn.entries:", initial.dn.entries))
@@ -726,27 +741,30 @@ project.geneset <- function (data.array,
     print(paste("total entries:", length(score.matrix.2[,1])))
   }
 
-  # Make sure there are no duplicated gene names after adding entries
-  unique.gene.sets <- unique(gs.names.2)
-  locs <- match(unique.gene.sets, gs.names.2)
-  score.matrix.2 <- score.matrix.2[locs,]
-  gs.names.2 <- gs.names.2[locs]
-  gs.descs.2 <- gs.descs.2[locs]
+    ## Make sure there are no duplicated gene names after adding entries
+    unique.gene.sets <- unique(gs.names.2)
+    locs <- match(unique.gene.sets, gs.names.2)
+    score.matrix.2 <- score.matrix.2[locs,]
+    gs.names.2 <- gs.names.2[locs]
+    gs.descs.2 <- gs.descs.2[locs]
 
-  # Final count
-  ##tab <- as.data.frame(table(gs.names.2))
-  ##ind <- order(tab[, "Freq"], decreasing=T)
-  ##tab <- tab[ind,]
-  ##print(tab[1:20,])
-  print(paste("Total gene sets:", length(gs.names.2)))
-  print(paste("Unique gene sets:", length(unique(gs.names.2))))
+    ## #################################################
+    ##  remove emtpy rows (gene set did not achieve sufficient
+    ##  overlap in any sample colum individually)
+    ## #################################################
+
+
+
+    ## Final count
+    print(paste("Total gene sets:", length(gs.names.2)))
+    print(paste("Unique gene sets:", length(unique(gs.names.2))))
 
     #################################################
     ## score matrix
     V.GCT <- data.frame(score.matrix.2)
     names(V.GCT) <- sample.names
     row.names(V.GCT) <- gs.names.2
-    write.gct.ssgsea(gct.data.frame=V.GCT, descs=gs.descs.2, filename=paste (output.prefix, '.gct', sep=''))
+    write.gct(gct.data.frame=V.GCT, descs=gs.descs.2, filename=paste (output.prefix, '.gct', sep=''))
     ##View(V.GCT)
 
     #################################################
@@ -754,7 +772,7 @@ project.geneset <- function (data.array,
     P.GCT <- data.frame(pval.matrix.2)
     names(P.GCT) <- sample.names
     row.names(P.GCT) <- gs.names.2
-    write.gct.ssgsea(gct.data.frame=P.GCT, descs=gs.descs.2, filename=paste (output.prefix, '-pvalues.gct', sep=''))
+    write.gct(gct.data.frame=P.GCT, descs=gs.descs.2, filename=paste (output.prefix, '-pvalues.gct', sep=''))
 
     ##################################################
     ## p-value correction
@@ -768,7 +786,7 @@ project.geneset <- function (data.array,
                 F.GCT[,i] <- p.adjust (F.GCT[,i], method='fdr')
 
         ## export
-        write.gct.ssgsea(gct.data.frame=F.GCT, descs=gs.descs.2, filename=paste (output.prefix, '-fdr-pvalues.gct', sep=''))
+        write.gct(gct.data.frame=F.GCT, descs=gs.descs.2, filename=paste (output.prefix, '-fdr-pvalues.gct', sep=''))
   }
 
     return(random.walk)
@@ -834,10 +852,6 @@ Read.GeneSets.db2 <- function (gs.db, thres.min = 2, thres.max = 2000) {
     size.G <- temp.size.G
     names(gs) <- names(gs.names) <- names(gs.desc) <- names(size.G) <- gs.names
 
-    ##gs <- temp
-   ## gs.names <- temp.names
-   ## gs.desc <- temp.desc
-   ## size.G <- temp.size.G
 
   return(list(N.gs = max.Ng, gs = gs, gs.names = gs.names, gs.desc = gs.desc,
               size.G = size.G, max.N.gs = max.Ng))
@@ -847,13 +861,13 @@ Read.GeneSets.db2 <- function (gs.db, thres.min = 2, thres.max = 2000) {
 ##           export dataframe to gct format
 ## 20170302 modified by kk
 ######################################################################
-write.gct.ssgsea <- function(gct.data.frame, names = "", descs = "", filename)
+write.gct <- function(gct.data.frame, names = "", descs = "", filename)
 {
     gct <- c()
 
     ## #################################
     ##       add names and desc
-    df <- data.frame(Name=names, Description=descs, gct.data.frame)
+    df <- data.frame(Name=rownames(gct.data.frame), Description=descs, gct.data.frame)
 
     ## #################################
     ##       header
@@ -870,53 +884,5 @@ write.gct.ssgsea <- function(gct.data.frame, names = "", descs = "", filename)
     writeLines(gct, con=filename)
 
 
-  ##f <- file(filename, "w")
-  ##cat("#1.2", "\n", file = f, append = TRUE, sep = "")
-  ##cat(dim(gct.data.frame)[1], "\t", dim(gct.data.frame)[2], "\n", file = f, append = TRUE, sep = "")
-  ##cat("Name", "\t", file = f, append = TRUE, sep = "")
-  ##cat("Description", file = f, append = TRUE, sep = "")
-
-  ## names <- names(gct.data.frame)
-  ## cat("\t", names[1], file = f, append = TRUE, sep = "")
-
-  ## if (length(names) > 1) {
-  ##   for (j in 2:length(names)) {
-  ##     cat("\t", names[j], file = f, append = TRUE, sep = "")
-  ##   }
-  ## }
-  ## cat("\n", file = f, append = TRUE, sep = "\t")
-
-  ## oldWarn <- options(warn = -1)
-  ## m <- matrix(nrow = dim(gct.data.frame)[1], ncol = dim(gct.data.frame)[2] +  2)
-  ## m[, 1] <- row.names(gct.data.frame)
-  ## if (length(descs) > 1) {
-  ##   m[, 2] <- descs
-  ## } else {
-  ##   m[, 2] <- row.names(gct.data.frame)
-  ## }
-  ## index <- 3
-  ## for (i in 1:dim(gct.data.frame)[2]) {
-  ##   m[, index] <- gct.data.frame[, i]
-  ##   index <- index + 1
-  ## }
-  ## write.table(m, file = f, append = TRUE, quote = FALSE, sep = "\t", eol = "\n", col.names = FALSE, row.names = FALSE, na='')
-  ## close(f)
-  ##   options(warn = 0)
-
 }
-
-
-
-##
-## Usage Example:
-#  Input dataset: example-data.gct
-#  Outputs: example-pathways.gct and example-pvalues.gct
-#  Genesets: MSigDB C2 (curated pathways from KEGG, BioCarta and Reactome)
-#
-## R Code:
-#    > source ('ssGSEA.R')
-#    > ssGSEA ('example-data.gct', 'example')
-#
-
-
 

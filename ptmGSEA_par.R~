@@ -80,7 +80,8 @@ ptmGSEA <- function (
     ## ####################################################
     dataset <- MSIG.Gct2Frame(filename = input.ds)  # Read dataset (GCT format)
     m <- data.matrix(dataset$ds)
-    gene.names <- dataset$row.names ## gene names or PTM sites, e.g. Q9HAW4;S839-ph
+    ##gene.names <- toupper(dataset$row.names) ## gene names or PTM sites, e.g. Q9HAW4;S839-ph
+    gene.names <- dataset$row.names
     gene.descs <- dataset$descs
     sample.names <- dataset$names
 
@@ -216,6 +217,9 @@ ptmGSEA <- function (
 
     tt <- Sys.time()
 
+
+
+
 ######################################################
 ##
 ##   function executed per gene set
@@ -234,13 +238,13 @@ project.geneset <- function (data.array,
                              min.overlap
                              ) {
 
-       ###############################################################################
+               ###############################################################################
             ##
             ##           function to calculate GSEA enrichment score
             ## - apply correlation scheme and weighting
             ## - calculate ES
             ##############################################################################
-            gsea.score <- function (ordered.gene.list, gene.set2, weight, n.rows, correl.type, gene.set.direction ) {
+            gsea.score <- function (ordered.gene.list, gene.set2, weight, n.rows, correl.type, gene.set.direction, data.expr ) {
 
                 ##################################################################
                 ## fuunction to calculate ES score
@@ -418,7 +422,7 @@ project.geneset <- function (data.array,
                     ##      original ssGSEA code without directionality
                     ##
                     ## ##############################################################
-                } else {
+                } else { ## end  if(!is.null(gene.set.direction))
 
                     Nh <- length(gene.set2)
                     Nm <-  N - Nh
@@ -494,8 +498,13 @@ project.geneset <- function (data.array,
             if( length(na.idx) > 0){
                 data.expr <- data.expr[-na.idx]
                 gene.names <- gene.names[-na.idx]
+
                 n.rows=length(data.expr)
-                gene.set <- gene.set[gene.set %in% gene.names]
+
+                gene.set.no.na <- which(gene.set %in% gene.names)
+
+                gene.set <- gene.set[ gene.set.no.na ]
+                gene.set.direction <- gene.set.direction[ gene.set.no.na ]
 
                 cat('L=', length(gene.set), '\n')
             }
@@ -516,7 +525,7 @@ project.geneset <- function (data.array,
 
                 ## ##############################################
                 ## calculate enrichment score
-                GSEA.results <- gsea.score (gene.list, gene.set2, weight, n.rows, correl.type, gene.set.direction)
+                GSEA.results <- gsea.score (gene.list, gene.set2, weight, n.rows, correl.type, gene.set.direction, data.expr)
                 ES.vector[sample.index] <- GSEA.results$ES
 
                 ## store the gsea results to
@@ -533,7 +542,7 @@ project.geneset <- function (data.array,
                     ## do permutations
                 } else {
 
-                    ES.tmp = sapply(1:nperm,  function(x) gsea.score(sample(1:n.rows), gene.set2, weight, n.rows, correl.type, gene.set.direction)$ES)
+                    ES.tmp = sapply(1:nperm,  function(x) gsea.score(sample(1:n.rows), gene.set2, weight, n.rows, correl.type, gene.set.direction, data.expr)$ES)
                     phi[sample.index, ] <- unlist(ES.tmp)
 
                     ## #######################################################
@@ -560,6 +569,9 @@ project.geneset <- function (data.array,
         return(list(ES.vector = ES.vector, NES.vector =  NES.vector, p.val.vector = p.val.vector, random.walk = random.walk))
     } ## end function 'project.geneset'
     ## ##########################################################################################################################################
+
+
+
 
     #####################################
     ## multicore version
@@ -845,42 +857,64 @@ Read.GeneSets.db2 <- function (gs.db, thres.min = 2, thres.max = 2000) {
 ######################################################################
 ##
 ##           export dataframe to gct format
-##
+## 20170302 modified by kk
 ######################################################################
-write.gct.ssgsea <- function(gct.data.frame, descs = "", filename)
+write.gct.ssgsea <- function(gct.data.frame, names = "", descs = "", filename)
 {
-  f <- file(filename, "w")
-  cat("#1.2", "\n", file = f, append = TRUE, sep = "")
-  cat(dim(gct.data.frame)[1], "\t", dim(gct.data.frame)[2], "\n", file = f, append = TRUE, sep = "")
-  cat("Name", "\t", file = f, append = TRUE, sep = "")
-  cat("Description", file = f, append = TRUE, sep = "")
+    gct <- c()
 
-  names <- names(gct.data.frame)
-  cat("\t", names[1], file = f, append = TRUE, sep = "")
+    ## #################################
+    ##       add names and desc
+    df <- data.frame(Name=rownames(gct.data.frame), Description=descs, gct.data.frame)
 
-  if (length(names) > 1) {
-    for (j in 2:length(names)) {
-      cat("\t", names[j], file = f, append = TRUE, sep = "")
-    }
-  }
-  cat("\n", file = f, append = TRUE, sep = "\t")
+    ## #################################
+    ##       header
+    gct[1] <- "#1.2"
+    gct[2] <- paste(dim(gct.data.frame), collapse='\t')
+    gct[3] <- paste( colnames(df) , collapse='\t')
 
-  oldWarn <- options(warn = -1)
-  m <- matrix(nrow = dim(gct.data.frame)[1], ncol = dim(gct.data.frame)[2] +  2)
-  m[, 1] <- row.names(gct.data.frame)
-  if (length(descs) > 1) {
-    m[, 2] <- descs
-  } else {
-    m[, 2] <- row.names(gct.data.frame)
-  }
-  index <- 3
-  for (i in 1:dim(gct.data.frame)[2]) {
-    m[, index] <- gct.data.frame[, i]
-    index <- index + 1
-  }
-  write.table(m, file = f, append = TRUE, quote = FALSE, sep = "\t", eol = "\n", col.names = FALSE, row.names = FALSE, na='')
-  close(f)
-  options(warn = 0)
+    ## ##################################
+    ##      data frame
+    gct <- c(gct, unlist(apply(df, 1, paste, collapse='\t')))
+
+    ## ###################################
+    ##        export
+    writeLines(gct, con=filename)
+
+
+  ##f <- file(filename, "w")
+  ##cat("#1.2", "\n", file = f, append = TRUE, sep = "")
+  ##cat(dim(gct.data.frame)[1], "\t", dim(gct.data.frame)[2], "\n", file = f, append = TRUE, sep = "")
+  ##cat("Name", "\t", file = f, append = TRUE, sep = "")
+  ##cat("Description", file = f, append = TRUE, sep = "")
+
+  ## names <- names(gct.data.frame)
+  ## cat("\t", names[1], file = f, append = TRUE, sep = "")
+
+  ## if (length(names) > 1) {
+  ##   for (j in 2:length(names)) {
+  ##     cat("\t", names[j], file = f, append = TRUE, sep = "")
+  ##   }
+  ## }
+  ## cat("\n", file = f, append = TRUE, sep = "\t")
+
+  ## oldWarn <- options(warn = -1)
+  ## m <- matrix(nrow = dim(gct.data.frame)[1], ncol = dim(gct.data.frame)[2] +  2)
+  ## m[, 1] <- row.names(gct.data.frame)
+  ## if (length(descs) > 1) {
+  ##   m[, 2] <- descs
+  ## } else {
+  ##   m[, 2] <- row.names(gct.data.frame)
+  ## }
+  ## index <- 3
+  ## for (i in 1:dim(gct.data.frame)[2]) {
+  ##   m[, index] <- gct.data.frame[, i]
+  ##   index <- index + 1
+  ## }
+  ## write.table(m, file = f, append = TRUE, quote = FALSE, sep = "\t", eol = "\n", col.names = FALSE, row.names = FALSE, na='')
+  ## close(f)
+  ##   options(warn = 0)
+
 }
 
 
@@ -895,6 +929,5 @@ write.gct.ssgsea <- function(gct.data.frame, descs = "", filename)
 #    > source ('ssGSEA.R')
 #    > ssGSEA ('example-data.gct', 'example')
 #
-
 
 
