@@ -3,10 +3,21 @@
 ## Created: September 09, 2017
 ## Author(s): Karsten Krug
 ##
-## Purpose: - Wrapper to ssGSEA script to perform single sample Gene Set Enrichment analysis.
-##          - The user has to define a folder containing expresison data in GCT 1.2 format
-##          - the script will loop over all gct files in this directoru and run ssGSEA
-##          - 
+## Purpose: 
+##      - Wrapper to ssGSEA script to perform single sample Gene Set Enrichment analysis.
+##          
+## Instructions:  
+##      - Just source the script into an R-session:
+##          - RStudio: open file and press 'Source' in the upper right part of the edityor window 
+##          - R-GUI: drap and drop this file into an R-GUI windoe
+##      - In order to specify your input files and databases the script will invoke two 
+##        Windows file dialogs.
+##      - The first dialog let's you choose a folder containing input files in GTC v1.2 format. 
+##        The script will loop over all gct files in this directory and run ssGSEA on each file 
+##        separately.
+##      - The second dialog window let's the user choose a gene set database such as MSigDB. 
+##        Some default database can be found in the 'db' subfolder. 
+##
 ################################################################################################################
 rm(list=ls())
 script.dir <- dirname(sys.frame(1)$ofile) ## get folder the script
@@ -15,20 +26,8 @@ script.dir <- dirname(sys.frame(1)$ofile) ## get folder the script
 ##  define parameters below:
 ## ##########################################################
 
-## directory with gct files
-gct.dir <- "C:/Users/Karsten/Dropbox/Manuscripts/20170630_PTM-GSEA_manuscript/CCLE/"
-
-## directory to write output
-out.dir <- gct.dir
-
-## MSigDB
-gsea.db = "h.all.v6.0.symbols.gmt" ## gene centric
-##gsea.db = 'C:/Users/Karsten/Dropbox/Manuscripts/20170630_PTM-GSEA_manuscript/db/ptm.sig.db.all.uniprot.human.v1.3.gmt' ## site centric
-##gsea.db <- 'H:/Projects/PTM_GSEA/20170920_PTMsigDB_v1.5/ptm.sig.db.all.uniprot.human.v1.5.gmt'
-
 ## ##############################
 ## sGSEA / PSEA parameters
-gene.set.databases  = ifelse(length(grep('/',gsea.db)) == 0, paste(script.dir,'db', gsea.db, sep='/'), gsea.db)
 sample.norm.type    = "rank"
 weight              = 0.75
 statistic           = "area.under.RES"    ##"Kolmogorov-Smirnov"
@@ -39,11 +38,37 @@ correl.type         = "z.score"
 par                 = T
 spare.cores         = 1
 
+## #####################################################################
+##   end paramaters
+## - in a perfect world users don't have to worry about the stuff below...
+## #####################################################################
+## directory with gct files
+##gct.dir <- "C:/Users/Karsten/Dropbox/Manuscripts/20170630_PTM-GSEA_manuscript/CCLE/"
+
+gct.dir.ok=F
+while(!gct.dir.ok){
+  gct.dir <- choose.dir(default='.', caption = 'Choose directory containing gct files. As of now only gst v1.2 files are supported.')
+  if(length(grep('\\.gct', dir(gct.dir))) > 0)
+    gct.dir.ok=T
+  }
+
+## directory to write output
+out.dir <- gct.dir
+
+## MSigDB
+##gsea.db = "h.all.v6.0.symbols.gmt" ## gene centric
+gene.set.databases = choose.files(default = paste( script.dir, 'db/c2.cp.v6.0.symbols.gmt', sep='/' ), caption='Choose gene set database in gmt format. See Broad\'s MSigDB website for details.')
+
+##gsea.db = 'C:/Users/Karsten/Dropbox/Manuscripts/20170630_PTM-GSEA_manuscript/db/ptm.sig.db.all.uniprot.human.v1.3.gmt' ## site centric
+##gsea.db <- 'H:/Projects/PTM_GSEA/20170920_PTMsigDB_v1.5/ptm.sig.db.all.uniprot.human.v1.5.gmt'
+
+
+
 ## ######################################################################
-##
 ##                          START
-## - Usually the user doesn't have to worry about the stuff below...
 ## ######################################################################
+##gene.set.databases  = ifelse(length(grep('/',gsea.db)) == 0, paste(script.dir,'db', gsea.db, sep='/'), gsea.db)
+
 source(paste(script.dir, 'src/ssGSEA_PSEA.R', sep='/'))
 
 ## #############################################
@@ -69,7 +94,7 @@ param.str = c(
     paste('##', Sys.time()),
     paste('gct.directory:', gct.dir, sep='\t'),
     paste('output.directory:', out.dir, sep='\t'),
-    paste('gene.set.database:',gsea.db, sep='\t'),
+    paste('gene.set.database:',gene.set.databases, sep='\t'),
     paste('sample.norm.type:', sample.norm.type, sep='\t'),
     paste('weight:', weight, sep='\t'),
     paste('statistic:', statistic, sep='\t'),
