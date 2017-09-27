@@ -8,7 +8,7 @@
 ##          
 ## Instructions:  
 ##      - Just source the script into an R-session:
-##          - RStudio: open file and press 'Source' in the upper right part of the edityor window 
+##          - RStudio: open file and press 'Source' in the upper right part of the editor window 
 ##          - R-GUI: drap and drop this file into an R-GUI windoe
 ##      - In order to specify your input files and databases the script will invoke two 
 ##        Windows file dialogs.
