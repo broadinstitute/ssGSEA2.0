@@ -2,12 +2,12 @@
 The R-script ```1_run_ssGSEA.r``` provides a wrapper to the ssGSEA R-program which performs the actual single sample Gene Set Enrichment analysis (GSEA).
 
 ### Instructions
-To execute the script just source it into a running R-session.
+To execute the script source it into a running R-session.
 
 - RStudio: open the file and press 'Source' in the upper right part of the editor window 
-- R-GUI: drap and drop this file into an R-GUI window
+- R-GUI: drag and drop this file into an R-GUI window
 
-Input files and databases can be specified via Windows file dialogs that will be automatically invoked. The first dialog let's you choose a folder containing input files in [GTC v1.2](https://software.broadinstitute.org/cancer/software/gsea/wiki/index.php/Data_formats#GCT:_Gene_Cluster_Text_file_format_.28.2A.gct.29) format. The script will loop over all gct files in this directory and run ssGSEA on each file separately. The second dialog window let's the user choose a gene set database such as [MSigDB](http://software.broadinstitute.org/gsea/msigdb/). A current version of MSigDB databases can be found in the 'db' subfolder. 
+Input files and databases can be specified via Windows file dialogs that will be automatically invoked. The first dialog lets you choose a folder containing input files in [GTC v1.2](https://software.broadinstitute.org/cancer/software/gsea/wiki/index.php/Data_formats#GCT:_Gene_Cluster_Text_file_format_.28.2A.gct.29) format. The script will loop over all gct files in this directory and run ssGSEA on each file separately. The second dialog window lets the user choose a gene set database such as [MSigDB](http://software.broadinstitute.org/gsea/msigdb/). A current version of MSigDB databases can be found in the 'db' subfolder. 
 
 
 Other paramaters for ssGSEA can be altered inside the parameters section in ```1_run_ssGSEA.r```. The default parameters have been choosen carfully and should provide reliable results for most use-case scenerios. 
@@ -23,6 +23,7 @@ Original code written by Pablo Tamayo. Adapted with additional modifications by 
 - scoring of directional gene sets
 - basic error handling
 - general performance improvements
+- additional output files like rank plots and parameters
 
 
 ### Reference

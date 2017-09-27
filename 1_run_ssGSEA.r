@@ -7,15 +7,15 @@
 ##      - Wrapper to ssGSEA script to perform single sample Gene Set Enrichment analysis.
 ##          
 ## Instructions:  
-##      - Just source the script into an R-session:
+##      - Source the script into a running R-session:
 ##          - RStudio: open file and press 'Source' in the upper right part of the editor window 
-##          - R-GUI: drap and drop this file into an R-GUI windoe
+##          - R-GUI: drag and drop this file into an R-GUI windoe
 ##      - In order to specify your input files and databases the script will invoke two 
 ##        Windows file dialogs.
-##      - The first dialog let's you choose a folder containing input files in GTC v1.2 format. 
+##      - The first dialog lets you choose a folder containing input files in GTC v1.2 format. 
 ##        The script will loop over all gct files in this directory and run ssGSEA on each file 
 ##        separately.
-##      - The second dialog window let's the user choose a gene set database such as MSigDB. 
+##      - The second dialog window lets the user choose a gene set database such as MSigDB. 
 ##        Some default database can be found in the 'db' subfolder. 
 ##
 ################################################################################################################
@@ -26,29 +26,27 @@ script.dir <- dirname(sys.frame(1)$ofile) ## get folder the script
 ##  define parameters below:
 ## ##########################################################
 
-## ##############################
 ## sGSEA / PSEA parameters
-sample.norm.type    = "rank"
-weight              = 0.75
-statistic           = "area.under.RES"    ##"Kolmogorov-Smirnov"
+sample.norm.type    = "rank"              ## "rank", "log", "log.rank", "none" 
+weight              = 0.75                ## value between 0 (no weighting) and 1 (actual data counts)
+statistic           = "area.under.RES"    ## "Kolmogorov-Smirnov"
 output.score.type   = "NES"               ## 'ES' or 'NES'
-nperm               = 1e3                 ## No of permutations
-min.overlap         = 10                  ## gene centric 10
-correl.type         = "z.score"
-par                 = T
-spare.cores         = 1
+nperm               = 1e3                 ## No. of permutations
+min.overlap         = 10                  ## minimal overlap between gene set and data
+correl.type         = "z.score"           ## 'rank', 'z.score', 'symm.rank'
+par                 = T                   ## use 'doParallel' package?
+spare.cores         = 1                   ## No. of cores to leave idle
 
 ## #####################################################################
 ##   end paramaters
 ## - in a perfect world users don't have to worry about the stuff below...
 ## #####################################################################
-## directory with gct files
-##gct.dir <- "C:/Users/Karsten/Dropbox/Manuscripts/20170630_PTM-GSEA_manuscript/CCLE/"
 
+## directory with gct files
 gct.dir.ok=F
 while(!gct.dir.ok){
   gct.dir <- choose.dir(default='.', caption = 'Choose directory containing gct files. As of now only gst v1.2 files are supported.')
-  if(length(grep('\\.gct', dir(gct.dir))) > 0)
+  if(length(grep('\\.gct$', dir(gct.dir))) > 0)
     gct.dir.ok=T
   }
 
@@ -56,14 +54,12 @@ while(!gct.dir.ok){
 out.dir <- gct.dir
 
 ## MSigDB
-##gsea.db = "h.all.v6.0.symbols.gmt" ## gene centric
-gene.set.databases = choose.files(default = paste( script.dir, 'db/c2.cp.v6.0.symbols.gmt', sep='/' ), caption='Choose gene set database in gmt format. See Broad\'s MSigDB website for details.')
-
-##gsea.db = 'C:/Users/Karsten/Dropbox/Manuscripts/20170630_PTM-GSEA_manuscript/db/ptm.sig.db.all.uniprot.human.v1.3.gmt' ## site centric
-##gsea.db <- 'H:/Projects/PTM_GSEA/20170920_PTMsigDB_v1.5/ptm.sig.db.all.uniprot.human.v1.5.gmt'
-
-
-
+db.ok=F
+while(!db.ok){
+  gene.set.databases = choose.files(default = paste( script.dir, 'db/c2.cp.v6.0.symbols.gmt', sep='/' ), caption='Choose gene set database in gmt format. See Broad\'s MSigDB website for details.')
+  if(length(grep('\\.gmt$', dir(gene.set.databases))) > 0)
+    db.ok=T
+  }
 ## ######################################################################
 ##                          START
 ## ######################################################################
@@ -86,8 +82,6 @@ signat.all <- readLines(gene.set.databases)
 signat.all <- strsplit(signat.all, '\t')
 names(signat.all) <- sapply(signat.all, function(x)x[1])
 signat.all <- lapply(signat.all, function(x) x[-c(1,2)])
-
-
 
 ## save parameters used for ssGSEA
 param.str = c(
