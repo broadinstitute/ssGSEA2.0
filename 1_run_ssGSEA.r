@@ -45,9 +45,11 @@ spare.cores         = 1                   ## No. of cores to leave idle
 ## directory with gct files
 gct.dir.ok=F
 while(!gct.dir.ok){
-  gct.dir <- choose.dir(default='.', caption = 'Choose directory containing gct files. As of now only gst v1.2 files are supported.')
+  gct.dir <- choose.dir(default=script.dir, caption = 'Choose directory containing GCT files. Currently only GCT v1.2 files are supported.')
   if(length(grep('\\.gct$', dir(gct.dir))) > 0)
     gct.dir.ok=T
+  if(is.na(gct.dir))
+    stop('No folder specified! Aborting.')
   }
 
 ## directory to write output
@@ -57,8 +59,10 @@ out.dir <- gct.dir
 db.ok=F
 while(!db.ok){
   gene.set.databases = choose.files(default = paste( script.dir, 'db/c2.cp.v6.0.symbols.gmt', sep='/' ), caption='Choose gene set database in gmt format. See Broad\'s MSigDB website for details.')
-  if(length(grep('\\.gmt$', dir(gene.set.databases))) > 0)
+  if(length(grep('\\.gmt$', gene.set.databases)) > 0 )
     db.ok=T
+  if(length(gene.set.databases)==0)
+    stop('No gene set database specified! Aborting.')
   }
 ## ######################################################################
 ##                          START
