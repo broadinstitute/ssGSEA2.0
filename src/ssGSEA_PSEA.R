@@ -79,9 +79,6 @@ ssGSEA2 <- function (
     ## ####################################################
     ##            import dataset
     ## ####################################################
-
-
-
     dataset <- MSIG.Gct2Frame(filename = input.ds)  # Read dataset (GCT format)
     m <- data.matrix(dataset$ds)
 
@@ -675,6 +672,7 @@ ssGSEA2 <- function (
         tmp.nes <- lapply(tmp, function(x)x$NES.vector)
         score.matrix <- matrix(unlist(tmp.nes), byrow=T, nrow=N.gs)
     }
+    
 
     random.walk <- lapply(tmp, function(x) x$random.walk)
 
@@ -776,21 +774,21 @@ ssGSEA2 <- function (
     unique.gene.sets <- unique(gs.names.2)
     locs <- match(unique.gene.sets, gs.names.2)
 
-    score.matrix.2 <- data.frame( score.matrix.2, stringsAsFactors=F )[locs, ]
-    pval.matrix.2 <- data.frame( pval.matrix.2, stringsAsFactors=F )[locs, ]
-
+    score.matrix.2 <- data.frame( score.matrix.2[locs, ], stringsAsFactors=F )#[locs, ]
+    pval.matrix.2 <- data.frame( pval.matrix.2[locs, ], stringsAsFactors=F )#[locs, ]
+    
+    ## to make it work with single vector inputs
+    #score.matrix.2 <- data.frame(score.matrix.2, stringsAsFactors=F)
+    #pval.matrix.2 <- data.frame(pval.matrix.2, stringsAsFactors=F)
+    
     gs.names.2 <- gs.names.2[locs]
     gs.descs.2 <- gs.descs.2[locs]
 
     ## #################################################
     ##  remove emtpy rows (gene set did not achieve sufficient
-    ##  overlap in any sample colum individually)
+    ##  overlap in any sample column)
     ## #################################################
     locs <- which( unlist( apply(score.matrix.2, 1, function(x) sum(is.na(x))/length(x)) ) < 1 )
-
-    ## to work on single vector inputs
-    score.matrix.2 <- data.frame(score.matrix.2, stringsAsfactors=F)
-    pval.matrix.2 <- data.frame(pval.matrix.2, stringsAsFactors=F)
 
     score.matrix.2 <- score.matrix.2[locs, ]
     pval.matrix.2 <- pval.matrix.2[locs, ]
@@ -808,16 +806,16 @@ ssGSEA2 <- function (
     #################################################
     ## score matrix
     V.GCT <- data.frame(score.matrix.2)
-    names(V.GCT) <- sample.names
-    row.names(V.GCT) <- gs.names.2
+    colnames(V.GCT) <- sample.names
+    rownames(V.GCT) <- gs.names.2
     write.gct(gct.data.frame=V.GCT, descs=gs.descs.2, filename=paste (output.prefix, '.gct', sep=''))
     ##View(V.GCT)
 
     #################################################
     ## p-value matrix
     P.GCT <- data.frame(pval.matrix.2)
-    names(P.GCT) <- sample.names
-    row.names(P.GCT) <- gs.names.2
+    colnames(P.GCT) <- sample.names
+    rownames(P.GCT) <- gs.names.2
     write.gct(gct.data.frame=P.GCT, descs=gs.descs.2, filename=paste (output.prefix, '-pvalues.gct', sep=''))
 
     ##################################################
@@ -858,14 +856,17 @@ MSIG.Gct2Frame <- function(filename = "NULL") {
     ##KK 20161208
     ##ds <- read.delim (filename, header=T, sep="\t", skip=2, row.names=1, blank.lines.skip=T, comment.char="", as.is=T)
     ds <- read.delim (filename, header=T, sep="\t", skip=2, row.names=NULL, blank.lines.skip=T, comment.char="", as.is=T)
-
+    ##ds <- read.delim(filename, skip=2, row.names=NULL, blank.lines.skip=T, stringsAsFactors = F)
+  
+    names <- colnames(ds)[3:ncol(ds)]
+    
     descs <- ds[,2]
     ##row.names <- row.names(ds)
     row.names <- ds[,1]
 
-    ds <- ds[,-c(1,2)]
+    ds <- data.frame(ds[,-c(1,2)], stringsAsFactors=F)
 
-  names <- names(ds)
+  
   return (list (ds = ds, row.names = row.names, descs = descs, names = names))
 }
 

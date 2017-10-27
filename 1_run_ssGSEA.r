@@ -20,7 +20,7 @@
 ##
 ################################################################################################################
 rm(list=ls())
-script.dir <- dirname(sys.frame(1)$ofile) ## get folder the script
+script.dir <- dirname(sys.frame(1)$ofile) ## get folder the script is located in
 
 ## ##########################################################
 ##  define parameters below:
@@ -31,8 +31,8 @@ sample.norm.type    = "rank"              ## "rank", "log", "log.rank", "none"
 weight              = 0.75                ## value between 0 (no weighting) and 1 (actual data counts)
 statistic           = "area.under.RES"    ## "Kolmogorov-Smirnov"
 output.score.type   = "NES"               ## 'ES' or 'NES'
-nperm               = 1e3                 ## No. of permutations
-min.overlap         = 10                  ## minimal overlap between gene set and data
+nperm               = 1e4                 ## No. of permutations
+min.overlap         = 5                  ## minimal overlap between gene set and data
 correl.type         = "z.score"           ## 'rank', 'z.score', 'symm.rank'
 par                 = T                   ## use 'doParallel' package?
 spare.cores         = 1                   ## No. of cores to leave idle
@@ -142,20 +142,24 @@ for(i in names(gct.files)){
     ## #########################################################
     
     ## input dataset
-    input = read.delim(input.ds, stringsAsFactors=F, skip=2, row.names=NULL)
+    input = data.frame( read.delim(input.ds, stringsAsFactors=F, skip=2, row.names=NULL), stringsAsFactors=F)
 
     ## gene/site ids
     gn.input <- input[, 1]
-
+    
+    ## sample names
+    all.samp <- colnames(input)[3:ncol(input)]
+    
     ## expression data only
     input <- input[, -c(1,2)]
-
-    ## sample names
-    all.samp <- names(input)
-
+    
+    ## needed to work with single column data sets
+    input <- data.frame(input, stringsAsFactors = F)
+    colnames(input) <- all.samp
+      
     ## import enrichment scores and p-values
-    gsea.score <- read.delim(paste( i, '.gct', sep=''), stringsAsFactors=F, skip=2, row.names='Name')
-    gsea.pval <-  read.delim(paste( i, '-pvalues.gct', sep=''), stringsAsFactors=F, skip=2, row.names='Name')
+    gsea.score <- data.frame( read.delim(paste( i, '.gct', sep=''), stringsAsFactors=F, skip=2, row.names='Name'), stringsAsFactors=F)
+    gsea.pval <-  data.frame( read.delim(paste( i, '-pvalues.gct', sep=''), stringsAsFactors=F, skip=2, row.names='Name'), stringsAsFactors=F)
 
     ## gene set names
     all.gs <- rownames(gsea.score)
