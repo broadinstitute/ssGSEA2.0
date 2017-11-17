@@ -9,18 +9,21 @@
 ## Instructions:  
 ##      - Source the script into a running R-session:
 ##          - RStudio: open file and press 'Source' in the upper right part of the editor window 
-##          - R-GUI: drag and drop this file into an R-GUI windoe
+##          - R-GUI: drag and drop this file into an R-GUI window
 ##      - In order to specify your input files and databases the script will invoke two 
 ##        Windows file dialogs.
 ##      - The first dialog lets you choose a folder containing input files in GTC v1.2 format. 
 ##        The script will loop over all gct files in this directory and run ssGSEA on each file 
 ##        separately.
 ##      - The second dialog window lets the user choose a gene set database such as MSigDB. 
-##        Some default database can be found in the 'db' subfolder. 
-##
+##        Some default database can be found in the 'db' subfolder.
+##      - MAC users: XQuartz is required for invoking file dialogs
+##         
 ################################################################################################################
 rm(list=ls())
 script.dir <- dirname(sys.frame(1)$ofile) ## get folder the script is located in
+os <- Sys.info()['sysname'] ## determine operating system
+require(pacman)
 
 ## ##########################################################
 ##  define parameters below:
@@ -32,7 +35,7 @@ weight              = 0.75                ## value between 0 (no weighting) and 
 statistic           = "area.under.RES"    ## "Kolmogorov-Smirnov"
 output.score.type   = "NES"               ## 'ES' or 'NES'
 nperm               = 1e3                 ## No. of permutations
-min.overlap         = 5                  ## minimal overlap between gene set and data
+min.overlap         = 10                  ## minimal overlap between gene set and data
 correl.type         = "z.score"           ## 'rank', 'z.score', 'symm.rank'
 par                 = T                   ## use 'doParallel' package?
 spare.cores         = 1                   ## No. of cores to leave idle
@@ -45,9 +48,16 @@ spare.cores         = 1                   ## No. of cores to leave idle
 ## directory with gct files
 gct.dir.ok=F
 while(!gct.dir.ok){
-  gct.dir <- choose.dir(default=script.dir, caption = 'Choose directory containing GCT files. Currently only GCT v1.2 files are supported.')
+  if(os == 'windows')
+    gct.dir <- choose.dir(default=script.dir, caption = 'Choose directory containing GCT files. Currently only GCT v1.2 files are supported.')
+  else {
+    p_load(tcltk)
+    gct.dir <- tclvalue(tkchooseDirectory())
+  }
+  
   if(length(grep('\\.gct$', dir(gct.dir))) > 0)
     gct.dir.ok=T
+  
   if(is.na(gct.dir))
     stop('No folder specified! Aborting.')
   }
@@ -58,7 +68,12 @@ out.dir <- gct.dir
 ## MSigDB
 db.ok=F
 while(!db.ok){
-  gene.set.databases = choose.files(default = paste( script.dir, 'db/c2.cp.v6.0.symbols.gmt', sep='/' ), caption='Choose gene set database in gmt format. See Broad\'s MSigDB website for details.')
+  
+  if(os == 'windows')
+    gene.set.databases = choose.files(default = paste( script.dir, 'db/c2.cp.v6.0.symbols.gmt', sep='/' ), caption='Choose gene set database in gmt format. See Broad\'s MSigDB website for details.')
+  else
+    gene.set.databases = file.choose()
+  
   if(length(grep('\\.gmt$', gene.set.databases)) > 0 )
     db.ok=T
   if(length(gene.set.databases)==0)
@@ -70,6 +85,7 @@ while(!db.ok){
 ##gene.set.databases  = ifelse(length(grep('/',gsea.db)) == 0, paste(script.dir,'db', gsea.db, sep='/'), gsea.db)
 
 source(paste(script.dir, 'src/ssGSEA_PSEA.R', sep='/'))
+##debug(ssGSEA2)
 
 ## #############################################
 ## prepare output folder

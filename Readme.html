@@ -119,25 +119,35 @@ $(document).ready(function () {
 </div>
 
 
-<div id="single-sample-gsea" class="section level2">
-<h2>Single sample GSEA</h2>
-<p>The R-script <code>1_run_ssGSEA.r</code> provides a wrapper to the actual ssGSEA script to perform single sample Gene Set Enrichment analysis (GSEA).</p>
+<div id="single-sample-gsea2.0" class="section level2">
+<h2>Single-sample GSEA2.0</h2>
+<p>The R-script <code>1_run_ssGSEA.r</code> provides a wrapper to the ssGSEA R-program which performs the actual single sample Gene Set Enrichment analysis (ssGSEA).</p>
 <div id="instructions" class="section level3">
 <h3>Instructions</h3>
-<p>To execute the script just source it into a running R-session.</p>
+<div id="windows-os" class="section level5">
+<h5><strong>Windows OS</strong></h5>
+<p>To execute the script source it into a running R-session.</p>
 <ul>
 <li>RStudio: open the file and press ‘Source’ in the upper right part of the editor window</li>
-<li>R-GUI: drap and drop this file into an R-GUI window</li>
+<li>R-GUI: drag and drop this file into an R-GUI window</li>
 </ul>
-<p>Input files and databases can be specified through Windows file dialogs that will be automatically invoked. The first dialog let’s you choose a folder containing input files in <a href="https://software.broadinstitute.org/cancer/software/gsea/wiki/index.php/Data_formats#GCT:_Gene_Cluster_Text_file_format_.28.2A.gct.29">GTC v1.2</a> format. The script will loop over all gct files in this directory and run ssGSEA on each file separately. The second dialog window let’s the user choose a gene set database such as <a href="http://software.broadinstitute.org/gsea/msigdb/">MSigDB</a>. A current version of MSigDB databases can be found in the ‘db’ subfolder.</p>
+<p>Input files and databases can be specified via Windows file dialogs that will be automatically invoked. The first dialog lets you choose a folder containing input files in <a href="https://software.broadinstitute.org/cancer/software/gsea/wiki/index.php/Data_formats#GCT:_Gene_Cluster_Text_file_format_.28.2A.gct.29">GTC v1.2</a> format. The script will loop over all gct files in this directory and run ssGSEA on each file separately. The second dialog window lets the user choose one or multiple gene set database such as <a href="http://software.broadinstitute.org/gsea/msigdb/">MSigDB</a>. A current version of MSigDB databases can be found in the ‘db’ subfolder.</p>
+</div>
+<div id="iosmac" class="section level5">
+<h5><strong>iOS/MAC</strong></h5>
+<p>In order to invoke file dialogs as decribed above, the <a href="https://www.xquartz.org">XQuartz</a> X Window System is required. Once installed <code>1_run_ssGSEA.r</code> can be sourced into an R session.</p>
+</div>
+<div id="gsea-parameters" class="section level5">
+<h5><strong>GSEA parameters</strong></h5>
 <p>Other paramaters for ssGSEA can be altered inside the parameters section in <code>1_run_ssGSEA.r</code>. The default parameters have been choosen carfully and should provide reliable results for most use-case scenerios.</p>
+</div>
 </div>
 <div id="gene-set-enrichment-analysis" class="section level3">
 <h3>Gene Set Enrichment Analysis</h3>
 <p>For information about the method please visit <a href="http://software.broadinstitute.org/gsea/" class="uri">http://software.broadinstitute.org/gsea/</a>.</p>
 </div>
-<div id="changes-to-the-original-ssgsea" class="section level3">
-<h3>Changes to the original ssGSEA</h3>
+<div id="changes-to-the-original-ssgsea-implementation" class="section level3">
+<h3>Changes to the original ssGSEA implementation</h3>
 <p>Original code written by Pablo Tamayo. Adapted with additional modifications by D. R. Mani and Karsten Krug. Adaptions include:</p>
 <ul>
 <li>support of multiple CPU cores (<code>doParallel</code> R-package)</li>
@@ -145,12 +155,14 @@ $(document).ready(function () {
 <li>scoring of directional gene sets</li>
 <li>basic error handling</li>
 <li>general performance improvements</li>
+<li>additional output files like rank plots and parameter files</li>
 </ul>
 </div>
 <div id="reference" class="section level3">
 <h3>Reference</h3>
 <ol style="list-style-type: decimal">
 <li><p>Abazeed, M. E., Adams, D. J., Hurov, K. E., Tamayo, P., Creighton, C. J., Sonkin, D., et al. (2013). Integrative Radiogenomic Profiling of Squamous Cell Lung Cancer. Cancer Research, 73(20), 6289-6298. <a href="http://doi.org/10.1158/0008-5472.CAN-13-1616" class="uri">http://doi.org/10.1158/0008-5472.CAN-13-1616</a></p></li>
+<li><p>Barbie, D. A., Tamayo, P., Boehm, J. S., Kim, S. Y., Susan, E., Dunn, I. F., . Hahn, W. C. (2010). Systematic RNA interference reveals that oncogenic KRAS- driven cancers require TBK1, 462(7269), 108-112. <a href="https://doi.org/10.1038/nature08460.Systematic" class="uri">https://doi.org/10.1038/nature08460.Systematic</a></p></li>
 <li><p>Subramanian, A., Tamayo, P., Mootha, V. K., Mukherjee, S., Ebert, B. L., Gillette, M. A., et al. (2005). Gene set enrichment analysis: a knowledge-based approach for interpreting genome-wide expression profiles. Proceedings of the National Academy of Sciences of the United States of America, 102(43), 15545-15550.</p></li>
 </ol>
 </div>
