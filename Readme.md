@@ -1,22 +1,22 @@
-## Single-sample GSEA2.0
+## Single-sample GSEA 2.0
 The R-script ```1_run_ssGSEA.r``` provides a wrapper to the ssGSEA R-program which performs the actual single sample Gene Set Enrichment analysis (ssGSEA).
 
 ### Instructions
 
 ##### **Windows OS**
-To execute the script source it into a running R-session.
+To run the script source it into a running R-session.
 
 - RStudio: open the file and press 'Source' in the upper right part of the editor window 
 - R-GUI: drag and drop this file into an R-GUI window
 
-Input files and databases can be specified via Windows file dialogs that will be automatically invoked. The first dialog lets you choose a folder containing input files in [GTC v1.2](https://software.broadinstitute.org/cancer/software/gsea/wiki/index.php/Data_formats#GCT:_Gene_Cluster_Text_file_format_.28.2A.gct.29) format. The script will loop over all gct files in this directory and run ssGSEA on each file separately. The second dialog window lets the user choose one or multiple gene set database such as [MSigDB](http://software.broadinstitute.org/gsea/msigdb/). A current version of MSigDB databases can be found in the 'db' subfolder. 
+Input files and databases can be specified via Windows file dialogs that will be automatically invoked. The first dialog lets you choose a folder containing input files in [GCT v1.2](https://software.broadinstitute.org/cancer/software/gsea/wiki/index.php/Data_formats#GCT:_Gene_Cluster_Text_file_format_.28.2A.gct.29) or [GCT v1.3](https://clue.io/connectopedia/gct_format) format. The script loops over all GCT files in this directory and runs ssGSEA on each file separately. The second dialog window lets the user choose one or multiple gene set databases in [GMT](https://software.broadinstitute.org/cancer/software/gsea/wiki/index.php/Data_formats#GMT:_Gene_Matrix_Transposed_file_format_.28.2A.gmt.29) format such as [MSigDB](http://software.broadinstitute.org/gsea/msigdb/). A current version of MSigDB databases can be found in the 'db' subfolder. 
 
 ##### **iOS/MAC** 
 In order to invoke file dialogs as decribed above, the [XQuartz](https://www.xquartz.org) X Window System is required. Once installed ```1_run_ssGSEA.r``` can be sourced into an R session.   
 
 ##### **GSEA parameters**
 
-Other paramaters for ssGSEA can be altered inside the parameters section in ```1_run_ssGSEA.r```. The default parameters have been choosen carfully and should provide reliable results for most use-case scenerios. 
+Other paramaters for ssGSEA can be altered inside the parameters section in ```1_run_ssGSEA.r```. The default parameters have been choosen carefully and should provide reliable results for most use-case scenerios. 
 
 ### Gene Set Enrichment Analysis
 For information about the method please visit http://software.broadinstitute.org/gsea/.
@@ -25,6 +25,7 @@ For information about the method please visit http://software.broadinstitute.org
 Original code written by Pablo Tamayo. Adapted with additional modifications by D. R. Mani and Karsten Krug. Adaptions include:
 
 - support of multiple CPU cores (```doParallel``` R-package)
+- support of GCT v1.3 format using functions from [cmapR](https://github.com/cmap/cmapR)
 - improved handling of missing values
 - scoring of directional gene sets
 - basic error handling

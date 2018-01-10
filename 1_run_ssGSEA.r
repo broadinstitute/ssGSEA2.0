@@ -23,7 +23,8 @@
 rm(list=ls())
 script.dir <- dirname(sys.frame(1)$ofile) ## get folder the script is located in
 os <- Sys.info()['sysname'] ## determine operating system
-require(pacman)
+if (!require("pacman")) install.packages ("pacman")
+require('pacman')
 
 ## ##########################################################
 ##  define parameters below:
@@ -48,8 +49,8 @@ spare.cores         = 1                   ## No. of cores to leave idle
 ## directory with gct files
 gct.dir.ok=F
 while(!gct.dir.ok){
-  if(os == 'windows')
-    gct.dir <- choose.dir(default=script.dir, caption = 'Choose directory containing GCT files. Currently only GCT v1.2 files are supported.')
+  if(os == 'Windows')
+    gct.dir <- choose.dir(default=script.dir, caption = 'Choose directory containing GCT files.')
   else {
     p_load(tcltk)
     gct.dir <- tclvalue(tkchooseDirectory())
@@ -69,8 +70,8 @@ out.dir <- gct.dir
 db.ok=F
 while(!db.ok){
   
-  if(os == 'windows')
-    gene.set.databases = choose.files(default = paste( script.dir, 'db/c2.cp.v6.0.symbols.gmt', sep='/' ), caption='Choose gene set database in gmt format. See Broad\'s MSigDB website for details.')
+  if(os == 'Windows')
+    gene.set.databases = choose.files(default = paste( script.dir, 'db/c2.cp.v6.1.symbols.gmt', sep='/' ), caption='Choose gene set database in gmt format. See Broad\'s MSigDB website for details.')
   else
     gene.set.databases = file.choose()
   
@@ -85,6 +86,8 @@ while(!db.ok){
 ##gene.set.databases  = ifelse(length(grep('/',gsea.db)) == 0, paste(script.dir,'db', gsea.db, sep='/'), gsea.db)
 
 source(paste(script.dir, 'src/ssGSEA_PSEA.R', sep='/'))
+source(paste(script.dir, 'src/gct-io.r', sep='/'))
+
 ##debug(ssGSEA2)
 
 ## #############################################
@@ -159,25 +162,34 @@ for(i in names(gct.files)){
     ## #########################################################
     
     ## input dataset
-    input = data.frame( read.delim(input.ds, stringsAsFactors=F, skip=2, row.names=NULL), stringsAsFactors=F)
-
+    ##input = data.frame( read.delim(input.ds, stringsAsFactors=F, skip=2, row.names=NULL), stringsAsFactors=F)
+    input.gct <- parse.gctx(input.ds) 
+    
     ## gene/site ids
-    gn.input <- input[, 1]
+    #gn.input <- input[, 1]
+    gn.input <- input.gct@rid
     
     ## sample names
-    all.samp <- colnames(input)[3:ncol(input)]
+    #all.samp <- colnames(input)[3:ncol(input)]
+    all.samp <- input.gct@cid
     
     ## expression data only
-    input <- input[, -c(1,2)]
+    #input <- input[, -c(1,2)]
+    input <- input.gct@mat
     
     ## needed to work with single column data sets
-    input <- data.frame(input, stringsAsFactors = F)
-    colnames(input) <- all.samp
+    #input <- data.frame(input, stringsAsFactors = F)
+    #colnames(input) <- all.samp
       
     ## import enrichment scores and p-values
-    gsea.score <- data.frame( read.delim(paste( i, '.gct', sep=''), stringsAsFactors=F, skip=2, row.names='Name'), stringsAsFactors=F)
-    gsea.pval <-  data.frame( read.delim(paste( i, '-pvalues.gct', sep=''), stringsAsFactors=F, skip=2, row.names='Name'), stringsAsFactors=F)
-
+    #gsea.score <- data.frame( read.delim(paste( i, '.gct', sep=''), stringsAsFactors=F, skip=2, row.names='Name'), stringsAsFactors=F)
+    gsea.score.gct <- parse.gctx(dir('.', pattern=paste( i, '_[0-9]*x[0-9*]', '.gct', sep=''))) 
+    gsea.score <- gsea.score.gct@mat
+    #gsea.pval <-  data.frame( read.delim(paste( i, '-pvalues.gct', sep=''), stringsAsFactors=F, skip=2, row.names='Name'), stringsAsFactors=F)
+    #gsea.pval <-  data.frame( read.delim( dir('.', pattern=paste( i, '_[0-9]*x[0-9*]', '-pvalues.gct', sep='')), stringsAsFactors=F, skip=2, row.names='Name'), stringsAsFactors=F)
+    gsea.pval.gct <- parse.gctx(dir('.', pattern=paste( i,  '-pvalues_[0-9]*x[0-9*]', sep=''))) 
+    gsea.pval <- gsea.pval.gct@mat
+    
     ## gene set names
     all.gs <- rownames(gsea.score)
 
@@ -274,10 +286,6 @@ for(i in names(gct.files)){
 
             }
             legend('right', legend=paste('NES=', round(score, 3), ' (p=', round(pval, 5), ')', sep=''), bty='n', inset=.2, cex=1.5)
-
-
-            ##ssGSEA.plot( data.expr, gs.name, samp.name, signat, score, pval )
-
 	}
 	par(mfrow=c(1, 1))
 	dev.off()

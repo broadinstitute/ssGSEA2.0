@@ -17,7 +17,8 @@
 ##       Gene set enrichment analysis: a knowledge-based approach for interpreting genome-wide expression profiles.
 ##       Proceedings of the National Academy of Sciences of the United States of America, 102(43), 15545–15550.
 
-require(pacman)
+#source('gct-io.r')
+#require(pacman)
 
 
 ssGSEA2 <- function (
@@ -79,13 +80,24 @@ ssGSEA2 <- function (
     ## ####################################################
     ##            import dataset
     ## ####################################################
-    dataset <- MSIG.Gct2Frame(filename = input.ds)  # Read dataset (GCT format)
-    m <- data.matrix(dataset$ds)
-
-    ##gene.names <- toupper(dataset$row.names) ## gene names or PTM sites, e.g. Q9HAW4;S839-ph
-    gene.names <- dataset$row.names
-    gene.descs <- dataset$descs
-    sample.names <- dataset$names
+    #dataset <- MSIG.Gct2Frame(filename = input.ds)  # Read dataset (GCT format)
+    #m <- data.matrix(dataset$ds)
+    #gene.names <- dataset$row.names
+    #gene.descs <- dataset$descs
+    #sample.names <- dataset$names
+    dataset <- try(parse.gctx(input.ds))
+    
+    m <- dataset@mat
+    gene.names <- dataset@rid
+    gene.descs <- dataset@rdesc
+    sample.names <- dataset@cid
+    sample.descs <- dataset@cdesc
+    ##View(sample.descs)
+    # remove id column. will be repeated otherwise.
+    if('id' %in% colnames(sample.descs))
+      sample.descs <- sample.descs[, -which(colnames(sample.descs) == 'id')]
+    gct.version <- dataset@version
+    gct.src <- dataset@src
 
     ## number of sample columns
     Ns <- ncol(m)
@@ -796,8 +808,15 @@ ssGSEA2 <- function (
     gs.names.2 <- gs.names.2[locs]
     gs.descs.2 <- gs.descs.2[locs]
 
-
-
+    # ###############################################
+    # prepare for new gct export (R CMAP functions)
+    gs.descs.2 <- data.frame(Description=gs.descs.2, stringsAsFactors = F)
+    #if(gct.version == '#1.2'){ 
+    #  gs.descs.2 <- data.frame(id=gs.names.2, Description=gs.descs.2, stringsAsFactors = F)
+    #} else {
+    #  gs.descs.2 <- data.frame(gs.descs.2, stringsAsFactors = F)
+    #  colnames(gs.descs.2) <- 
+    #  }
     ## #################################################
     ## Final count
     print(paste("Total gene sets:", length(gs.names.2)))
@@ -805,33 +824,71 @@ ssGSEA2 <- function (
 
     #################################################
     ## score matrix
-    V.GCT <- data.frame(score.matrix.2)
-    colnames(V.GCT) <- sample.names
-    rownames(V.GCT) <- gs.names.2
-    write.gct(gct.data.frame=V.GCT, descs=gs.descs.2, filename=paste (output.prefix, '.gct', sep=''))
+    V.GCT <- new('GCT')
+    V.GCT@mat <- data.matrix(score.matrix.2)
+    V.GCT@rid <- gs.names.2
+    V.GCT@cid <- sample.names
+    V.GCT@rdesc <- gs.descs.2
+    #View(sample.descs)
+    if(nrow(sample.descs) > 0)
+      V.GCT@cdesc <- data.frame(sample.descs, stringsAsFactors = F)
+    #else  
+    #  V.GCT@cdesc <- NULL
+    V.GCT@src <- gct.src
+    V.GCT@version <- gct.version
+    write.gct(V.GCT, paste (output.prefix, '_', paste(dim(V.GCT@mat), collapse ='x'),'.gct', sep=''))
+    
+    #V.GCT <- data.frame(score.matrix.2)
+    #colnames(V.GCT) <- sample.names
+    #rownames(V.GCT) <- gs.names.2
+    
+    #write.gct(gct.data.frame=V.GCT, descs=gs.descs.2, filename=paste (output.prefix, '.gct', sep=''))
     ##View(V.GCT)
 
     #################################################
     ## p-value matrix
-    P.GCT <- data.frame(pval.matrix.2)
-    colnames(P.GCT) <- sample.names
-    rownames(P.GCT) <- gs.names.2
-    write.gct(gct.data.frame=P.GCT, descs=gs.descs.2, filename=paste (output.prefix, '-pvalues.gct', sep=''))
-
+    #P.GCT <- data.frame(pval.matrix.2)
+    #colnames(P.GCT) <- sample.names
+    #rownames(P.GCT) <- gs.names.2
+    #write.gct(gct.data.frame=P.GCT, descs=gs.descs.2, filename=paste (output.prefix, '-pvalues.gct', sep=''))
+    P.GCT <- new('GCT')
+    P.GCT@mat <- data.matrix(pval.matrix.2)
+    P.GCT@rid <- gs.names.2
+    P.GCT@cid <- sample.names
+    P.GCT@rdesc <- gs.descs.2
+    if(nrow(sample.descs) > 0)
+      P.GCT@cdesc <- data.frame(sample.descs, stringsAsFactors = F)
+    P.GCT@src <- gct.src
+    P.GCT@version <- gct.version
+    write.gct(P.GCT, paste (output.prefix, '-pvalues' ,'_', paste(dim(P.GCT@mat), collapse ='x'),'.gct', sep=''))
+    
+    
     ##################################################
     ## p-value correction
     if (fdr.pvalue) {
-        F.GCT <- P.GCT
+        #F.GCT <- P.GCT
+        F.GCT.mat <- P.GCT@mat
         if (global.fdr)
-            F.GCT <- matrix ( p.adjust(unlist (F.GCT), method='fdr'),
-                             ncol=ncol(F.GCT))
+            F.GCT.mat <- matrix ( p.adjust(unlist (F.GCT.mat), method='fdr'),
+                             ncol=ncol(F.GCT.mat))
         else
-            for (i in 1:ncol(F.GCT))
-                F.GCT[,i] <- p.adjust (F.GCT[,i], method='fdr')
+            for (i in 1:ncol(F.GCT.mat))
+                F.GCT.mat[,i] <- p.adjust (F.GCT.mat[,i], method='fdr')
 
         ## export
-        write.gct(gct.data.frame=F.GCT, descs=gs.descs.2, filename=paste (output.prefix, '-fdr-pvalues.gct', sep=''))
-  }
+        #write.gct(gct.data.frame=F.GCT, descs=gs.descs.2, filename=paste (output.prefix, '-fdr-pvalues.gct', sep=''))
+        F.GCT <- new('GCT')
+        F.GCT@mat <- F.GCT.mat
+        F.GCT@rid <- gs.names.2
+        F.GCT@cid <- sample.names
+        F.GCT@rdesc <- gs.descs.2
+        if(nrow(sample.descs) > 0)
+            F.GCT@cdesc <- data.frame(sample.descs, stringsAsFactors = F)
+        F.GCT@src <- gct.src
+        F.GCT@version <- gct.version
+        write.gct(F.GCT, paste (output.prefix, '-fdr-pvalues' ,'_', paste(dim(F.GCT@mat), collapse ='x'),'.gct', sep=''))
+            
+    }
 
     return(random.walk)
 }
@@ -851,24 +908,25 @@ ssGSEA2 <- function (
 ## it into an R data frame
 ## - modified by kk
 #############################################################
-MSIG.Gct2Frame <- function(filename = "NULL") {
-
-    ##KK 20161208
-    ##ds <- read.delim (filename, header=T, sep="\t", skip=2, row.names=1, blank.lines.skip=T, comment.char="", as.is=T)
-    ds <- read.delim (filename, header=T, sep="\t", skip=2, row.names=NULL, blank.lines.skip=T, comment.char="", as.is=T)
-    ##ds <- read.delim(filename, skip=2, row.names=NULL, blank.lines.skip=T, stringsAsFactors = F)
-  
-    names <- colnames(ds)[3:ncol(ds)]
-    
-    descs <- ds[,2]
-    ##row.names <- row.names(ds)
-    row.names <- ds[,1]
-
-    ds <- data.frame(ds[,-c(1,2)], stringsAsFactors=F)
-
-  
-  return (list (ds = ds, row.names = row.names, descs = descs, names = names))
-}
+# MSIG.Gct2Frame <- function(filename = "NULL") {
+# 
+#   
+#     ##KK 20161208
+#     ##ds <- read.delim (filename, header=T, sep="\t", skip=2, row.names=1, blank.lines.skip=T, comment.char="", as.is=T)
+#     ds <- read.delim (filename, header=T, sep="\t", skip=2, row.names=NULL, blank.lines.skip=T, comment.char="", as.is=T)
+#     ##ds <- read.delim(filename, skip=2, row.names=NULL, blank.lines.skip=T, stringsAsFactors = F)
+#   
+#     names <- colnames(ds)[3:ncol(ds)]
+#     
+#     descs <- ds[,2]
+#     ##row.names <- row.names(ds)
+#     row.names <- ds[,1]
+# 
+#     ds <- data.frame(ds[,-c(1,2)], stringsAsFactors=F)
+# 
+#   
+#   return (list (ds = ds, row.names = row.names, descs = descs, names = names))
+# }
 
 #############################################################
 ##
@@ -908,32 +966,32 @@ Read.GeneSets.db2 <- function (gs.db, thres.min = 2, thres.max = 2000) {
 ##           export dataframe to gct 1.2 format
 ## 20170302 modified by kk
 ######################################################################
-write.gct <- function(gct.data.frame, names = NULL, descs = NULL, filename)
-{
-    gct <- c()
-
-    ## #################################
-    ##       add names and desc
-    if(is.null(names))
-        names <- rownames(gct.data.frame)
-
-    df <- data.frame(Name=names, Description=descs, gct.data.frame)
-
-    ## #################################
-    ##       header
-    gct[1] <- "#1.2"
-    gct[2] <- paste(dim(gct.data.frame), collapse='\t')
-    gct[3] <- paste( colnames(df) , collapse='\t')
-
-    ## ##################################
-    ##      data frame
-    gct <- c(gct, unlist(apply(df, 1, paste, collapse='\t')))
-
-    ## ###################################
-    ##        export
-    writeLines(gct, con=filename)
-
-}
+# write.gct <- function(gct.data.frame, names = NULL, descs = NULL, filename)
+# {
+#     gct <- c()
+# 
+#     ## #################################
+#     ##       add names and desc
+#     if(is.null(names))
+#         names <- rownames(gct.data.frame)
+# 
+#     df <- data.frame(Name=names, Description=descs, gct.data.frame)
+# 
+#     ## #################################
+#     ##       header
+#     gct[1] <- "#1.2"
+#     gct[2] <- paste(dim(gct.data.frame), collapse='\t')
+#     gct[3] <- paste( colnames(df) , collapse='\t')
+# 
+#     ## ##################################
+#     ##      data frame
+#     gct <- c(gct, unlist(apply(df, 1, paste, collapse='\t')))
+# 
+#     ## ###################################
+#     ##        export
+#     writeLines(gct, con=filename)
+# 
+# }
 
 #################################################
 ##   Given a string and a number of characters
