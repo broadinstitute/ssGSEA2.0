@@ -83,10 +83,6 @@ while(!db.ok){
 ## ######################################################################
 ##                          START
 ## ######################################################################
-##gene.set.databases  = ifelse(length(grep('/',gsea.db)) == 0, paste(script.dir,'db', gsea.db, sep='/'), gsea.db)
-
-#source(paste(script.dir, 'src/ssGSEA_PSEA.R', sep='/'))
-#source(paste(script.dir, 'src/gct-io.r', sep='/'))
 source(paste(script.dir, 'src/ssGSEA2.0.R', sep='/'))
 
 
@@ -101,7 +97,6 @@ setwd(date.str)
 
 ## #############################################
 ## import signature database
-#signat.all <- readLines(gene.set.databases)
 signat.all <- unlist(lapply(gene.set.databases, readLines))
 signat.all <- strsplit(signat.all, '\t')
 names(signat.all) <- sapply(signat.all, function(x)x[1])
@@ -130,6 +125,7 @@ gct.files <- dir(gct.dir, pattern='\\.gct$', full.names=T)
 ##names(gct.files) <- sub('_gene_centric.*','', sub('\\.gct$', '', sub('.*/','', gct.files)))
 names(gct.files) <- paste(  sub('\\.gct$', '', sub('.*/','', gct.files)), 'ssGSEA', sep='_' )
 
+#debug(ssGSEA2)
 
 ## #####################################
 ## loop over gct files and run ssGSEA

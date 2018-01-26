@@ -837,7 +837,8 @@ ssGSEA2 <- function (
     #  V.GCT@cdesc <- NULL
     V.GCT@src <- gct.src
     V.GCT@version <- gct.version
-    write.gct(V.GCT, paste (output.prefix, '_', paste(dim(V.GCT@mat), collapse ='x'),'.gct', sep=''))
+    #write.gct(V.GCT, paste (output.prefix, '_', paste(dim(V.GCT@mat), collapse ='x'),'.gct', sep=''))
+    write.gct(V.GCT, paste (output.prefix, '_', paste(dim(V.GCT@mat), collapse ='x'),'.gct', sep=''), appenddim = F)
     
     #V.GCT <- data.frame(score.matrix.2)
     #colnames(V.GCT) <- sample.names
@@ -861,7 +862,7 @@ ssGSEA2 <- function (
       P.GCT@cdesc <- data.frame(sample.descs, stringsAsFactors = F)
     P.GCT@src <- gct.src
     P.GCT@version <- gct.version
-    write.gct(P.GCT, paste (output.prefix, '-pvalues' ,'_', paste(dim(P.GCT@mat), collapse ='x'),'.gct', sep=''))
+    write.gct(P.GCT, paste (output.prefix, '-pvalues' ,'_', paste(dim(P.GCT@mat), collapse ='x'),'.gct', sep=''), appenddim = F)
     
     
     ##################################################
@@ -887,7 +888,7 @@ ssGSEA2 <- function (
             F.GCT@cdesc <- data.frame(sample.descs, stringsAsFactors = F)
         F.GCT@src <- gct.src
         F.GCT@version <- gct.version
-        write.gct(F.GCT, paste (output.prefix, '-fdr-pvalues' ,'_', paste(dim(F.GCT@mat), collapse ='x'),'.gct', sep=''))
+        write.gct(F.GCT, paste (output.prefix, '-fdr-pvalues' ,'_', paste(dim(F.GCT@mat), collapse ='x'),'.gct', sep=''), appenddim = F)
             
     }
 
