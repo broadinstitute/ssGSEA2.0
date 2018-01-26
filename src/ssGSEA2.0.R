@@ -95,8 +95,8 @@ ssGSEA2 <- function (
     sample.descs <- dataset@cdesc
     ##View(sample.descs)
     # remove id column. will be repeated otherwise.
-    if('id' %in% colnames(sample.descs))
-      sample.descs <- sample.descs[, -which(colnames(sample.descs) == 'id')]
+    #if('id' %in% colnames(sample.descs))
+    #  sample.descs <- sample.descs[, -which(colnames(sample.descs) == 'id')]
     gct.version <- dataset@version
     gct.src <- dataset@src
 
