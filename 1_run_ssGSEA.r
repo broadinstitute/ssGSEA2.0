@@ -85,10 +85,10 @@ while(!db.ok){
 ## ######################################################################
 ##gene.set.databases  = ifelse(length(grep('/',gsea.db)) == 0, paste(script.dir,'db', gsea.db, sep='/'), gsea.db)
 
-source(paste(script.dir, 'src/ssGSEA_PSEA.R', sep='/'))
-source(paste(script.dir, 'src/gct-io.r', sep='/'))
+#source(paste(script.dir, 'src/ssGSEA_PSEA.R', sep='/'))
+#source(paste(script.dir, 'src/gct-io.r', sep='/'))
+source(paste(script.dir, 'src/ssGSEA2.0.R', sep='/'))
 
-##debug(ssGSEA2)
 
 ## #############################################
 ## prepare output folder
