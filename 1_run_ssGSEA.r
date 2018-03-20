@@ -148,7 +148,8 @@ for(i in names(gct.files)){
     cat('Running ssSGEA on:', sub('.*/', '', input.ds), '\n\n')
 
     ## run ssGSEA
-    gsea.res <- ssGSEA2(input.ds, gene.set.databases=gene.set.databases, sample.norm.type=sample.norm.type, weight=weight,statistic=statistic, output.score.type = output.score.type, nperm  = nperm, min.overlap  = min.overlap, correl.type = correl.type, output.prefix = paste(i), par=par, spare.cores=spare.cores )
+    system('ssSGEA.r -input -ss')
+    #gsea.res <- ssGSEA2(input.ds, gene.set.databases=gene.set.databases, sample.norm.type=sample.norm.type, weight=weight,statistic=statistic, output.score.type = output.score.type, nperm  = nperm, min.overlap  = min.overlap, correl.type = correl.type, output.prefix = paste(i), par=par, spare.cores=spare.cores )
 
     ## save object
     save(gsea.res, file=paste(i, '.RData', sep=''))
