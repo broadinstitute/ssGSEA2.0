@@ -16,7 +16,7 @@
 ##    2. Subramanian, A., Tamayo, P., Mootha, V. K., Mukherjee, S., Ebert, B. L., Gillette, M. A., et al. (2005).
 ##       Gene set enrichment analysis: a knowledge-based approach for interpreting genome-wide expression profiles.
 ##       Proceedings of the National Academy of Sciences of the United States of America, 102(43), 15545–15550.
-source('gct-io.r')
+source('gct-io.R')
 suppressPackageStartupMessages(require(pacman))
 if(!suppressPackageStartupMessages(require(rhdf5))){
   source("https://bioconductor.org/biocLite.R")

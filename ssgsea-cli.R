@@ -21,12 +21,14 @@ option_list <- list(
 
 # parse command line parameters
 opt <- parse_args( OptionParser(option_list=option_list) )
-#save(opt, file='opt.RData')
+
 # hard-coded parameters
 spare.cores <- 0 # use all available cpus
-log.file <- paste(opt$output.prefix, '_ssGSEA2.log', sep='')
+log.file <- paste(opt$output.prefix, '_ssGSEA2.0.log', sep='')
 
-source('/src/ssGSEA2.0.R')
+## source the actual script
+script.dir <- dirname(sys.frame(1)$ofile) ## get folder the script is located in
+source(paste(script.dir, 'src/ssGSEA2.0.R', sep='/'))
 
 ## ######################################################################################################
 ##
