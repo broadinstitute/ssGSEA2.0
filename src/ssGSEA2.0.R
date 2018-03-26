@@ -16,11 +16,19 @@
 ##    2. Subramanian, A., Tamayo, P., Mootha, V. K., Mukherjee, S., Ebert, B. L., Gillette, M. A., et al. (2005).
 ##       Gene set enrichment analysis: a knowledge-based approach for interpreting genome-wide expression profiles.
 ##       Proceedings of the National Academy of Sciences of the United States of America, 102(43), 15545–15550.
-#source('gct-io.r')
+source('gct-io.r')
 suppressPackageStartupMessages(require(pacman))
-if(!suppressPackageStartupMessages(require(cmapR)))
-  devtools::install_github("cmap/cmapR")
-suppressPackageStartupMessages(require(cmapR))
+if(!suppressPackageStartupMessages(require(rhdf5))){
+  source("https://bioconductor.org/biocLite.R")
+  biocLite("rhdf5")
+}
+#if(!suppressPackageStartupMessages(require(cmapR)))
+#  devtools::install_github("cmap/cmapR")
+#suppressPackageStartupMessages(require(cmapR))
+p_load(gtools)
+p_load(verification)
+p_load(doParallel)
+p_load(foreach)
 
 ssGSEA2 <- function (
                      input.ds,                      ## input data file in gct format, first column (Name) must contain gene symbols
@@ -74,8 +82,8 @@ ssGSEA2 <- function (
 
     ## ###################################################
     ## Load libraries
-    p_load(gtools)
-    p_load(verification)
+    #p_load(gtools)
+    #p_load(verification)
     #p_load(RColorBrewer)
 
     ## ####################################################
@@ -87,12 +95,14 @@ ssGSEA2 <- function (
     #gene.descs <- dataset$descs
     #sample.names <- dataset$names
     dataset <- try(parse.gctx(input.ds))
-
+    
     m <- dataset@mat
     gene.names <- dataset@rid
     gene.descs <- dataset@rdesc
     sample.names <- dataset@cid
     sample.descs <- dataset@cdesc
+    
+    
     ##View(sample.descs)
     # remove id column. will be repeated otherwise.
     #if('id' %in% colnames(sample.descs))
@@ -610,8 +620,8 @@ ssGSEA2 <- function (
     ##                 multicore version
     ##
     if(par){
-        p_load(doParallel)
-        p_load(foreach)
+        #p_load(doParallel)
+        #p_load(foreach)
 
         ## register cores
         cl <- makeCluster(detectCores() - spare.cores)

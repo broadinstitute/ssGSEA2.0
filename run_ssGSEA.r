@@ -35,11 +35,11 @@ sample.norm.type    = "rank"              ## "rank", "log", "log.rank", "none"
 weight              = 0.75                ## value between 0 (no weighting) and 1 (actual data counts)
 statistic           = "area.under.RES"    ## "Kolmogorov-Smirnov"
 output.score.type   = "NES"               ## 'ES' or 'NES'
-nperm               = 1e3                 ## No. of permutations
+nperm               = 1e4                 ## No. of permutations
 min.overlap         = 5                  ## minimal overlap between gene set and data
 correl.type         = "z.score"           ## 'rank', 'z.score', 'symm.rank'
 par                 = T                   ## use 'doParallel' package?
-spare.cores         = 1                   ## No. of cores to leave idle
+spare.cores         = 0                   ## No. of cores to leave idle
 
 ## #####################################################################
 ##   end paramaters
