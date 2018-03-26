@@ -16,15 +16,19 @@
 ##    2. Subramanian, A., Tamayo, P., Mootha, V. K., Mukherjee, S., Ebert, B. L., Gillette, M. A., et al. (2005).
 ##       Gene set enrichment analysis: a knowledge-based approach for interpreting genome-wide expression profiles.
 ##       Proceedings of the National Academy of Sciences of the United States of America, 102(43), 15545–15550.
-source('gct-io.R')
-suppressPackageStartupMessages(require(pacman))
-if(!suppressPackageStartupMessages(require(rhdf5))){
-  source("https://bioconductor.org/biocLite.R")
-  biocLite("rhdf5")
-}
+## get folder the script is located in
+#source(paste( dirname(sys.frame(1)$ofile), 'gct-io.R', sep='/'))
+#suppressPackageStartupMessages(require(pacman))
+#if(!suppressPackageStartupMessages(require(rhdf5))){
+#  source("https://bioconductor.org/biocLite.R")
+#  biocLite("rhdf5")
+#}
 #if(!suppressPackageStartupMessages(require(cmapR)))
 #  devtools::install_github("cmap/cmapR")
 #suppressPackageStartupMessages(require(cmapR))
+if (!require("pacman")) install.packages ("pacman")
+require('pacman')
+
 p_load(gtools)
 p_load(verification)
 p_load(doParallel)

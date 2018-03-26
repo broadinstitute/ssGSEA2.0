@@ -26,9 +26,26 @@ opt <- parse_args( OptionParser(option_list=option_list) )
 spare.cores <- 0 # use all available cpus
 log.file <- paste(opt$output.prefix, '_ssGSEA2.0.log', sep='')
 
+## #####################################
 ## source the actual script
-script.dir <- dirname(sys.frame(1)$ofile) ## get folder the script is located in
-source(paste(script.dir, 'src/ssGSEA2.0.R', sep='/'))
+
+## helper function to source files
+## see: https://stackoverflow.com/questions/42815889/r-source-and-path-to-source-files
+source_here <- function(x, ...) {
+  dir <- "."
+  if(sys.nframe()>0) {
+    frame <- sys.frame(1)
+    if (!is.null(frame$ofile)) {
+      dir <- dirname(frame$ofile)
+    }
+  }
+  source(file.path(dir, x), ...)
+}
+source_here('src/gct-io.R')
+source_here('src/ssGSEA2.0.R')
+#script.dir <- dirname(sys.frame(1)$ofile) ## get folder the script is located in
+#source(paste(script.dir, 'src/ssGSEA2.0.R', sep='/'))
+#source(paste(script.dir, 'src/gct-io.R', sep='/'))
 
 ## ######################################################################################################
 ##

@@ -35,7 +35,7 @@ sample.norm.type    = "rank"              ## "rank", "log", "log.rank", "none"
 weight              = 0.75                ## value between 0 (no weighting) and 1 (actual data counts)
 statistic           = "area.under.RES"    ## "Kolmogorov-Smirnov"
 output.score.type   = "NES"               ## 'ES' or 'NES'
-nperm               = 1e3                 ## No. of permutations
+nperm               = 1e1                 ## No. of permutations
 min.overlap         = 10                  ## minimal overlap between gene set and data
 correl.type         = "z.score"           ## 'rank', 'z.score', 'symm.rank'
 par                 = T                   ## use 'doParallel' package?
@@ -46,11 +46,25 @@ spare.cores         = 1                   ## No. of cores to leave idle
 ## - in a perfect world users don't have to worry about the stuff below...
 ## #####################################################################
 
+## helper function to source files
+## see: https://stackoverflow.com/questions/42815889/r-source-and-path-to-source-files
+source_here <- function(x, ...) {
+  dir <- "."
+  if(sys.nframe()>0) {
+    frame <- sys.frame(1)
+    if (!is.null(frame$ofile)) {
+      dir <- dirname(frame$ofile)
+    }
+  }
+  source(file.path(dir, x), ...)
+}
+
+## #################################
 ## directory with gct files
 gct.dir.ok=F
 while(!gct.dir.ok){
   if(os == 'Windows')
-    gct.dir <- choose.dir(default=script.dir, caption = 'Choose directory containing GCT files.')
+    gct.dir <- choose.dir(default=getwd(), caption = 'Choose directory containing GCT files.')
   else {
     p_load(tcltk)
     gct.dir <- tclvalue(tkchooseDirectory())
@@ -83,8 +97,11 @@ while(!db.ok){
 ## ######################################################################
 ##                          START
 ## ######################################################################
-source(paste(script.dir, 'src/ssGSEA2.0.R', sep='/'))
-
+#source(paste(script.dir, 'src/ssGSEA2.0.R', sep='/'))
+#source(paste(script.dir, 'src/ssGSEA2.0.R', sep='/'))
+#source(paste(script.dir, 'src/gct-io.R', sep='/'))
+source_here('src/ssGSEA2.0.R')
+#source_here('src/ssGSEA2.0.R')
 
 ## #############################################
 ## prepare output folder
