@@ -39,6 +39,7 @@ source_here <- function(x, ...) {
       dir <- dirname(frame$ofile)
     }
   }
+  cat('....', dir, '....\n')
   source(file.path(dir, x), ...)
 }
 #source_here('src/gct-io.R')

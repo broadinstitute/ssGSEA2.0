@@ -173,12 +173,21 @@ for(i in names(gct.files)){
     ## #########################################################
     ##              rank plots
     ## #########################################################
-    
+    ## flag to indicate presence of duplictaed ids in GCT file
+    ## e.g. in case of gene-centric-redundant signature analysis
+    dups=F
+    if(file.exists( sub('\\.gct', '_unique.gct', input.ds)))
+      dups <- T
+      
     ## input dataset
+    if(dups)
+       input.ds <-sub('\\.gct', '_unique.gct', input.ds)
     input.gct <- parse.gctx(input.ds) 
     
     ## gene/site ids
     gn.input <- input.gct@rid
+    if(dups)
+      gn.input <-  sub('_[0-9]{1,4}$', '', gn.input)
     
     ## sample names
     all.samp <- input.gct@cid
@@ -295,6 +304,9 @@ for(i in names(gct.files)){
 
     if(length(gct.files) > 1)
         setwd('..')
+  
+    if(dups)
+      file.remove(input.ds)
 }
 
 

@@ -136,7 +136,7 @@ ssGSEA2 <- function (
             ## extract data 
             m <- dataset@mat
             gene.names <- sub('_[0-9]{1,4}$', '', dataset@rid)
-            writeLines(gene.names, con='ids.txt')
+            #writeLines(gene.names, con='ids.txt')
             gene.descs <- dataset@rdesc
             sample.names <- dataset@cid
             sample.descs <- dataset@cdesc
@@ -223,6 +223,7 @@ ssGSEA2 <- function (
     ## - in case of PTM signatures extract
     ##   the directionality information
     ## ####################################################
+    #gs.size <- sapply(gs, length)
     if(length(grep(';u|;d', gs[[1]])) > 0 ){  ## PTMsigDB
         gs <- lapply(gs, function(x) x[ sub(';u$|;d$','', x) %in% gene.names ])
         gs.direction <- lapply(gs, function(x) sub('^.*;(d|u)$', '\\1', x))
@@ -254,6 +255,7 @@ ssGSEA2 <- function (
     ## update all data
     gs.names <- gs.names[keep.idx]
     gs <- gs[keep.idx]
+    #gs.size <- gs.size[keep.idx] 
     gs.descs <- gs.descs[keep.idx]
     size.G <- size.G[keep.idx]
     size.ol.G <- size.ol.G[keep.idx]
@@ -295,7 +297,8 @@ ssGSEA2 <- function (
                              nperm = 200,
                              correl.type  = "rank",              ## "rank", "z.score", "symm.rank"
                              gene.set.direction=NULL,             ## direction of regulation; has to be in same order than 'gene.set'
-                             min.overlap
+                             min.overlap,
+                             size.G.current
                              ) {
 
 
@@ -381,7 +384,8 @@ ssGSEA2 <- function (
                     Nh.u <- length(u.idx)
                     Nm.u <-  N - Nh.u
 
-                    if(length(u.idx) > 1){
+                    #if(length(u.idx) > 1){
+                    if(length(u.idx) > 0){ ## 20180327
 
                         ## locations of 'up' features
                         tag.u <- sign( match(ordered.gene.list, gene.set2[ u.idx ], nomatch=0) )
@@ -427,8 +431,9 @@ ssGSEA2 <- function (
                     Nh.d <- length(d.idx)
                     Nm.d <-  N - Nh.d
 
-                    if(length(d.idx) > 1){
-
+                    #if(length(d.idx) > 1){
+                    if(length(d.idx) > 0){ ## 20180327
+                      
                         ## locations of 'd' features
                         tag.d <- sign( match(ordered.gene.list, gene.set2[ d.idx ], nomatch=0) )
                         ind.d = which(tag.d == 1)
@@ -454,7 +459,6 @@ ssGSEA2 <- function (
                         ES.d <- score.res$ES
                         arg.ES.d <- score.res$arg.ES
                         RES.d <- score.res$RES
-
 
                     } else {
                         correl.vector.d <- rep(0, N)
@@ -533,7 +537,10 @@ ssGSEA2 <- function (
         ## fast implementation of GSEA)
         ES.vector <- NES.vector <- p.val.vector <- rep(NA, n.cols)
         correl.vector <- rep(NA, n.rows)
-
+        
+        ## vectors to return number of overlapping genes/sites 
+        OL.vector <- OL.numb.vector <- OL.perc.vector <- rep(NA, n.cols)
+        
         ## Compute ES score for signatures in each sample
         phi <- array(NA, c(n.cols, nperm))
 
@@ -544,6 +551,7 @@ ssGSEA2 <- function (
         ## 'gene.names' is in the same order as the input data
         gene.names.all <- gene.names
         gene.set.all <- gene.set
+        gene.set.size <- length(gene.set)
         gene.set.direction.all <- gene.set.direction
         n.rows.all <- n.rows
 
@@ -586,13 +594,30 @@ ssGSEA2 <- function (
                 gene.set.direction <- gene.set.direction[ gene.set.no.na ]
 
                 ##cat('gene set overlap:', length(gene.set), '\n', file=log.file, append=T)
-                cat('gene set overlap:', sum(gene.names %in% gene.set), '\n', file=log.file, append=T)
-            }
+                #cat('gene set overlap:', sum(gene.names %in% gene.set), '\n', file=log.file, append=T)
+            } ## end if missing values are present
 
-            ##if(length(gene.set) < min.overlap){
+            ## ###############################################
+            ## if there is NOT sufficient overlap...
             if(sum(gene.names %in% gene.set) < min.overlap){
+              
                 random.walk[[sample.index]] <- NA
+                OL.numb.vector[sample.index] <- sum(gene.names %in% gene.set)
+                
+                ## if there was any overlap, report the part of the signature
+                if(OL.numb.vector[sample.index] > 0){
+                  
+                  if(is.null(gene.set.direction)){
+                     OL.vector[ sample.index ] <- paste( intersect(gene.names, gene.set), collapse='|')
+                  } else {
+                     ##OL.vector[ sample.index ] <- paste( paste(gene.set, gene.set.direction, sep=';')[ na.omit(match(gene.names, sub(';u$|;d$', '', gene.set) )) ], collapse='|')
+                    OL.vector[ sample.index ] <- paste( paste(gene.set, gene.set.direction, sep=';')[ na.omit(match(gene.names, gene.set )) ], collapse='|')
+                  }
 
+                }
+                
+                OL.perc.vector[sample.index] <- round( 100*(OL.numb.vector[sample.index] / size.G.current), 1)
+            
             } else {
 
                 ## locations of gene set in input data (before ranking/ordering)
@@ -601,7 +626,9 @@ ssGSEA2 <- function (
                 ## gene.set2 <- which( gene.names %in% gene.set ) ## to work with redundant gene names, e.g. phospho-data
                 ## this takes care about redundant gene lists, the approach above does not return the locations of 'gene.set' in 'gene.names' but the indices of 'gene.names' present in 'gene.set'
                 gene.set2 <- as.numeric( unlist(sapply( gene.set, function(x) which(gene.names == x) )))
-
+  
+               # save(gene.set2, gene.set, gene.names, file='tmp.RData')  
+                
                 ## order of ranks, list is now ordered, elements are locations of the ranks in
                 ## original data,
                 gene.list <- order(data.expr, decreasing=T)
@@ -612,6 +639,34 @@ ssGSEA2 <- function (
                 GSEA.results <- gsea.score (gene.list, gene.set2, weight, n.rows, correl.type, gene.set.direction, data.expr)
                 ES.vector[sample.index] <- GSEA.results$ES
 
+                ## overlap between gene set and data
+                if(is.null(gene.set.direction)){
+                  
+                  OL.vector[ sample.index ] <- paste( unique( gene.names[gene.list][GSEA.results$indicator ]) , collapse='|')
+                  OL.numb.vector[sample.index ] <- length( unique( gene.names[gene.list][GSEA.results$indicator ]) )
+                  OL.perc.vector[sample.index ] <- round(100*( OL.numb.vector[ sample.index ]/size.G.current  ),1)
+                  
+                } else { # separately for up/down
+                  
+                  ol.tmp <- c()
+                  if( length(GSEA.results$indicator$u) > 0)
+                    ol.tmp <-  c(ol.tmp, paste( unique( gene.names[gene.list][GSEA.results$indicator$u ]), 'u', sep=';'))
+                  if(length(GSEA.results$indicator$d) > 0)
+                    ol.tmp <-  c(ol.tmp, paste( unique( gene.names[gene.list][GSEA.results$indicator$d ]), 'd', sep=';'))
+                  
+                  OL.vector[ sample.index ] <- paste( ol.tmp, collapse='|')
+                  
+                  ## absolute numbers
+                  OL.numb.vector[sample.index ] <- length( ol.tmp )
+                                                             
+                  ## percent                                         
+                  OL.perc.vector[sample.index ] <- round(100*( OL.numb.vector[ sample.index ]/size.G.current ),1)
+                }
+                
+                #OL.vector[sample.index] <- paste( gene.names[ GSEA.results$indicator ], collapse='/' ) 
+                #OL.vector[sample.index] <- paste( gene.set[gene.set2] , collapse='/' ) 
+                
+                
                 ## store the gsea results to
                 random.walk[[sample.index]] <- GSEA.results
 
@@ -647,13 +702,13 @@ ssGSEA2 <- function (
                         s <- sum(neg.phi <= ES.vector[sample.index])/length(neg.phi)
                         p.val.vector[sample.index] <- ifelse(s == 0, 1/nperm, s)
                     }
-                }
-            }
+                } ## end do permutations
+            } ## end minimal overlap required
         }
-        return(list(ES.vector = ES.vector, NES.vector =  NES.vector, p.val.vector = p.val.vector, random.walk = random.walk))
+        return(list(ES.vector = ES.vector, NES.vector =  NES.vector, p.val.vector = p.val.vector, OL.vector=OL.vector, OL.numb.vector=OL.numb.vector, OL.perc.vector=OL.perc.vector, gene.set.size=gene.set.size, random.walk = random.walk))
+        
     } ## end function 'project.geneset'
     ## ######################################################################################################
-
 
 
     ## #########################################################
@@ -661,9 +716,6 @@ ssGSEA2 <- function (
     ##                 multicore version
     ##
     if(par){
-        #p_load(doParallel)
-        #p_load(foreach)
-
         ## register cores
         cl <- makeCluster(detectCores() - spare.cores)
         registerDoParallel(cl)
@@ -681,10 +733,10 @@ ssGSEA2 <- function (
 
             if (output.score.type == "ES") {
 
-                OPAM <- project.geneset (data.array = m, gene.names = gene.names, n.cols = Ns, n.rows= Ng, weight = weight, statistic = statistic, gene.set = gene.overlap, nperm = 0, correl.type = correl.type, gene.set.direction = gene.set.direction, min.overlap = min.overlap)
+                OPAM <- project.geneset (data.array = m, gene.names = gene.names, n.cols = Ns, n.rows= Ng, weight = weight, statistic = statistic, gene.set = gene.overlap, nperm = 0, correl.type = correl.type, gene.set.direction = gene.set.direction, min.overlap = min.overlap, size.G.current = size.G[gs.i])
 
             } else if (output.score.type == "NES") {
-                OPAM <- project.geneset (data.array = m, gene.names = gene.names, n.cols = Ns, n.rows= Ng, weight = weight, statistic = statistic, gene.set = gene.overlap, nperm = nperm, correl.type = correl.type, gene.set.direction = gene.set.direction, min.overlap = min.overlap)
+                OPAM <- project.geneset (data.array = m, gene.names = gene.names, n.cols = Ns, n.rows= Ng, weight = weight, statistic = statistic, gene.set = gene.overlap, nperm = nperm, correl.type = correl.type, gene.set.direction = gene.set.direction, min.overlap = min.overlap, size.G.current = size.G[gs.i])
         }
         OPAM
         }
@@ -711,11 +763,10 @@ ssGSEA2 <- function (
                 gene.set.direction <- gs.direction[[gs.i]]
 
             if (output.score.type == "ES") {
-                OPAM <- project.geneset (data.array = m, gene.names = gene.names, n.cols = Ns, n.rows= Ng, weight = weight, statistic = statistic, gene.set = gene.overlap, nperm = 1, correl.type = correl.type, gene.set.direction = gene.set.direction, min.overlap = min.overlap)
+                OPAM <- project.geneset (data.array = m, gene.names = gene.names, n.cols = Ns, n.rows= Ng, weight = weight, statistic = statistic, gene.set = gene.overlap, nperm = 1, correl.type = correl.type, gene.set.direction = gene.set.direction, min.overlap = min.overlap, size.G.current = size.G[gs.i])
 
             } else if (output.score.type == "NES") {
-                OPAM <- project.geneset (data.array = m, gene.names = gene.names, n.cols = Ns, n.rows= Ng, weight = weight, statistic = statistic, gene.set = gene.overlap, nperm = nperm, correl.type = correl.type, gene.set.direction = gene.set.direction, min.overlap = min.overlap)
-
+                OPAM <- project.geneset (data.array = m, gene.names = gene.names, n.cols = Ns, n.rows= Ng, weight = weight, statistic = statistic, gene.set = gene.overlap, nperm = nperm, correl.type = correl.type, gene.set.direction = gene.set.direction, min.overlap = min.overlap, size.G.current = size.G[gs.i])
             }
         OPAM
         })
@@ -737,7 +788,20 @@ ssGSEA2 <- function (
         score.matrix <- matrix(unlist(tmp.nes), byrow=T, nrow=N.gs)
     }
 
-
+    ## #############################
+    ## overlapping genes/sites
+    tmp.ol <- lapply(tmp, function(x)x$OL.vector)
+    ol.matrix <- matrix(unlist(tmp.ol), byrow=T, nrow=N.gs)
+    ## overlap vector: absolute
+    tmp.ol.numb <- lapply(tmp, function(x)x$OL.numb.vector)
+    ol.numb.matrix <- matrix(unlist(tmp.ol.numb), byrow=T, nrow=N.gs)
+    ## overlpa vector: percent
+    tmp.ol.perc <- lapply(tmp, function(x)x$OL.perc.vector)
+    ol.perc.matrix <- matrix(unlist(tmp.ol.perc), byrow=T, nrow=N.gs)
+    
+    ## gene site size
+    gs.size <- size.G #sapply(tmp, function(x) x$gene.set.size)
+    
     random.walk <- lapply(tmp, function(x) x$random.walk)
 
     cat('main loop: ')
@@ -756,8 +820,14 @@ ssGSEA2 <- function (
 
         score.matrix.2 <- score.matrix
         pval.matrix.2 <- pval.matrix
+        
+        ol.matrix.2 <- ol.matrix
+        ol.numb.matrix.2 <- ol.numb.matrix
+        ol.perc.matrix.2 <- ol.perc.matrix
+        
         gs.names.2 <- gs.names
         gs.descs.2 <- gs.descs
+        gs.size.2 <- gs.size 
 
         ## ####################################
         ## combine replace
@@ -840,23 +910,39 @@ ssGSEA2 <- function (
 
     score.matrix.2 <- data.frame( score.matrix.2[locs, ], stringsAsFactors=F )#[locs, ]
     pval.matrix.2 <- data.frame( pval.matrix.2[locs, ], stringsAsFactors=F )#[locs, ]
-
-    ## to make it work with single vector inputs
-    #score.matrix.2 <- data.frame(score.matrix.2, stringsAsFactors=F)
-    #pval.matrix.2 <- data.frame(pval.matrix.2, stringsAsFactors=F)
-
+    ol.matrix.2 <- data.frame( ol.matrix.2[locs, ], stringsAsFactors=F )
+    ol.numb.matrix.2 <- data.frame( ol.numb.matrix.2[locs, ], stringsAsFactors=F )
+    ol.perc.matrix.2 <- data.frame( ol.perc.matrix.2[locs, ], stringsAsFactors=F )
+    
     gs.names.2 <- gs.names.2[locs]
     gs.descs.2 <- gs.descs.2[locs]
-
+    gs.size.2 <- gs.size.2[locs]
     
     ################################################# 
     ## number of valid columns
-    NumbColumnPresent <- apply(score.matrix.2, 1, function(x) sum(!is.na(x))) 
-    
+    No.columns.scored <- apply(score.matrix.2, 1, function(x) sum(!is.na(x))) 
+
+    ## overlaps
+    #Signature.set.overlap <- apply(ol.matrix.2, 1, paste, collapse='|')  
+    #Signature.set.overlap.size <- apply(ol.numb.matrix.2, 1, paste, collapse='|')  
+    #Signature.set.overlap.percent <- apply(ol.perc.matrix.2, 1, paste, collapse='|')  
+    Signature.set.overlap <- ol.matrix.2
+    colnames(Signature.set.overlap) <- paste( 'Signature.set.overlap', sample.names)
+    Signature.set.overlap.size <- ol.numb.matrix.2
+    colnames(Signature.set.overlap.size) <- paste( 'Signature.set.overlap.size', sample.names)
+    Signature.set.overlap.percent <- ol.perc.matrix.2
+    colnames(Signature.set.overlap.percent) <- paste( 'Signature.set.overlap.percent', sample.names)
+          
     # ###############################################
     # prepare for new gct export (R CMAP functions)
     #gs.descs.2 <- data.frame(Description=gs.descs.2, stringsAsFactors = F)
-    gs.descs.2 <- data.frame(Description=gs.descs.2, NumbColumnPresent, stringsAsFactors = F)
+    gs.descs.2 <- data.frame(Signature.set.description=gs.descs.2,
+                             Signature.set.size=gs.size.2,
+                             #Signature.set.overlap.size,
+                             Signature.set.overlap.percent,
+                             Signature.set.overlap, 
+                             No.columns.scored, 
+                             stringsAsFactors = F)
     
     
     ## #################################################
@@ -864,7 +950,7 @@ ssGSEA2 <- function (
     ##  overlap in any sample column)
     ## #################################################
     #locs <- which( unlist( apply(score.matrix.2, 1, function(x) sum(is.na(x))/length(x)) ) < 1 )
-    locs <- which( NumbColumnPresent > 0)
+    locs <- which( No.columns.scored > 0)
     
     score.matrix.2 <- score.matrix.2[locs, ]
     pval.matrix.2 <- pval.matrix.2[locs, ]
@@ -910,7 +996,7 @@ ssGSEA2 <- function (
 
     ##################################################
     ## p-value correction
-    if (fdr.pvalue) {
+    #if (fdr.pvalue) {
         #F.GCT <- P.GCT
         F.GCT.mat <- P.GCT@mat
         if (global.fdr)
@@ -933,10 +1019,34 @@ ssGSEA2 <- function (
         #write.gct(F.GCT, paste (output.prefix, '-fdr-pvalues' ,'_', paste(dim(F.GCT@mat), collapse ='x'),'.gct', sep=''), appenddim = F)
         write.gct(F.GCT, paste (output.prefix, '-fdr-pvalues.gct', sep=''), appenddim = F)
 
-    }
+   # }
 
-    if(!is.null(gct.unique))
-      file.remove(gct.unique)
+    ## ######################################################################
+    ## generate a single CGT containing scores as data matrix and
+    ## p-values, fdr-p-values as row annotation matrices
+    
+    ## add p-values and fdr p-values to row description
+    fdr.tmp <- F.GCT@mat
+    colnames(fdr.tmp) <- paste('fdr-pvalue', sample.names, sep='.')
+    pval.tmp <- P.GCT@mat
+    colnames(pval.tmp) <- paste('pvalue', sample.names, sep='.')
+    gs.descs.2 <-  data.frame(gs.descs.2, pval.tmp, fdr.tmp, stringsAsFactors = F)
+    
+    ## generate GCT
+    ALL.GCT <- new('GCT') 
+    ALL.GCT@mat <- V.GCT@mat
+    ALL.GCT@rid <- gs.names.2
+    ALL.GCT@cid <- sample.names
+    ALL.GCT@rdesc <- gs.descs.2
+    if(nrow(sample.descs) > 0)
+      ALL.GCT@cdesc <- data.frame(sample.descs, stringsAsFactors = F)
+    ALL.GCT@src <- gct.src
+    ALL.GCT@version <- gct.version
+    write.gct(ALL.GCT, paste (output.prefix, '-combined.gct', sep=''), appenddim = F)
+    
+    
+    
+    
     
     return(random.walk)
 }
