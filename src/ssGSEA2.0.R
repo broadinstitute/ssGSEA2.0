@@ -5,6 +5,26 @@
 ##   2) take directionality of regulation into account
 ##   3) multi-threaded using 'doParallel'
 ##   4) handle missing values
+##   5) cmapR functions for data import/export
+
+#source(paste( dirname(sys.frame(1)$ofile), 'gct-io.R', sep='/'))
+suppressPackageStartupMessages(require(pacman))
+if(!suppressPackageStartupMessages(require(rhdf5))){
+  source("https://bioconductor.org/biocLite.R")
+  biocLite("rhdf5")
+}
+if(!suppressPackageStartupMessages(require(cmapR)))
+  devtools::install_github("cmap/cmapR")
+
+suppressPackageStartupMessages(require(cmapR))
+if (!require("pacman")) install.packages ("pacman")
+require('pacman')
+
+p_load(gtools)
+p_load(verification)
+p_load(doParallel)
+p_load(foreach)
+p_load(magrittr)
 
 
 ## Single sample GSEA
@@ -16,24 +36,6 @@
 ##    2. Subramanian, A., Tamayo, P., Mootha, V. K., Mukherjee, S., Ebert, B. L., Gillette, M. A., et al. (2005).
 ##       Gene set enrichment analysis: a knowledge-based approach for interpreting genome-wide expression profiles.
 ##       Proceedings of the National Academy of Sciences of the United States of America, 102(43), 15545–15550.
-## get folder the script is located in
-#source(paste( dirname(sys.frame(1)$ofile), 'gct-io.R', sep='/'))
-#suppressPackageStartupMessages(require(pacman))
-#if(!suppressPackageStartupMessages(require(rhdf5))){
-#  source("https://bioconductor.org/biocLite.R")
-#  biocLite("rhdf5")
-#}
-#if(!suppressPackageStartupMessages(require(cmapR)))
-#  devtools::install_github("cmap/cmapR")
-#suppressPackageStartupMessages(require(cmapR))
-if (!require("pacman")) install.packages ("pacman")
-require('pacman')
-
-p_load(gtools)
-p_load(verification)
-p_load(doParallel)
-p_load(foreach)
-
 ssGSEA2 <- function (
                      input.ds,                      ## input data file in gct format, first column (Name) must contain gene symbols
                      output.prefix,                 ## prefix used for output tables
@@ -84,29 +86,64 @@ ssGSEA2 <- function (
     combine.mode <- match.arg(combine.mode)
     correl.type <- match.arg(correl.type)
 
-    ## ###################################################
-    ## Load libraries
-    #p_load(gtools)
-    #p_load(verification)
-    #p_load(RColorBrewer)
-
     ## ####################################################
     ##            import dataset
     ## ####################################################
-    #dataset <- MSIG.Gct2Frame(filename = input.ds)  # Read dataset (GCT format)
-    #m <- data.matrix(dataset$ds)
-    #gene.names <- dataset$row.names
-    #gene.descs <- dataset$descs
-    #sample.names <- dataset$names
-    dataset <- try(parse.gctx(input.ds))
-    
-    m <- dataset@mat
-    gene.names <- dataset@rid
-    gene.descs <- dataset@rdesc
-    sample.names <- dataset@cid
-    sample.descs <- dataset@cdesc
-    
-    
+    gct.unique <- NULL
+    dataset <- try(parse.gctx(input.ds), silent = T)
+    if(class(dataset) != 'try-error' ){
+      
+      m <- dataset@mat
+      gene.names <- dataset@rid
+      gene.descs <- dataset@rdesc
+      sample.names <- dataset@cid
+      sample.descs <- dataset@cdesc
+      
+    } else {
+        ## - cmapR functions stop if ids are not unique
+        ## - import gct using readLines and make ids unique
+        if(length(grep('rid must be unique', dataset) ) > 0) {
+          gct.tmp <- readLines(input.ds)
+          #first column
+          rid <- gct.tmp %>% sub('\t.*','', .)
+          #gct version
+          ver <- rid[1]
+          #data and meta data columns
+          meta <- strsplit(gct.tmp[2], '\t') %>% unlist() %>% as.numeric()
+          if(ver=='#1.3')
+            rid.idx <- (meta[4]+3) : length(rid)
+          else
+            rid.idx <- 4:length(rid)
+          
+          #check whether ids are unique
+          if(length(rid[rid.idx]) > length(unique(rid[rid.idx]))){
+            warning('rids not unique! Making ids unique and exporting new GCT file...\n\n')
+            #make unique
+            rid[rid.idx] <- make.unique(rid[rid.idx], sep='_')
+            #other columns
+            rest <- gct.tmp %>% sub('.*?\t','', .)
+            rest[1] <- ''
+            gct.tmp2 <- paste(rid, rest, sep='\t') 
+            gct.tmp2[1] <-  sub('\t.*','',gct.tmp2[1])
+            
+            #export
+            gct.unique <- sub('\\.gct', '_unique.gct', input.ds)
+            writeLines(gct.tmp2, con=gct.unique)
+            
+            #import using cmapR functions
+            dataset <- parse.gctx(fname = gct.unique)
+            
+            ## extract data 
+            m <- dataset@mat
+            gene.names <- sub('_[0-9]{1,4}$', '', dataset@rid)
+            writeLines(gene.names, con='ids.txt')
+            gene.descs <- dataset@rdesc
+            sample.names <- dataset@cid
+            sample.descs <- dataset@cdesc
+          }
+        } #end if 'rid not unique'
+    } #end if try-error
+
     ##View(sample.descs)
     # remove id column. will be repeated otherwise.
     #if('id' %in% colnames(sample.descs))
@@ -898,6 +935,9 @@ ssGSEA2 <- function (
 
     }
 
+    if(!is.null(gct.unique))
+      file.remove(gct.unique)
+    
     return(random.walk)
 }
 

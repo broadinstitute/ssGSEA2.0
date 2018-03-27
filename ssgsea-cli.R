@@ -41,7 +41,7 @@ source_here <- function(x, ...) {
   }
   source(file.path(dir, x), ...)
 }
-source_here('src/gct-io.R')
+#source_here('src/gct-io.R')
 source_here('src/ssGSEA2.0.R')
 #script.dir <- dirname(sys.frame(1)$ofile) ## get folder the script is located in
 #source(paste(script.dir, 'src/ssGSEA2.0.R', sep='/'))
