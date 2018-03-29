@@ -6,6 +6,7 @@
 ##   3) multi-threaded using 'doParallel'
 ##   4) handle missing values
 ##   5) cmapR functions for data import/export
+##   6) produce more extensive output, e.g. dataset/database overlaps, etc.
 
 #source(paste( dirname(sys.frame(1)$ofile), 'gct-io.R', sep='/'))
 suppressPackageStartupMessages(require(pacman))
@@ -53,11 +54,13 @@ ssGSEA2 <- function (
                      ##    add it but keeping the individual *_UP and *_DN versions.
                      min.overlap         = 10,
                      correl.type         = c("rank", "z.score", "symm.rank"),  ## correlation type: "rank", "z.score", "symm.rank"
-                     fdr.pvalue          = TRUE,    ## output adjusted (FDR) p-values
+                     #fdr.pvalue          = TRUE,    ## output adjusted (FDR) p-values
                      global.fdr          = FALSE,   ## if TRUE calculate global FDR; else calculate FDR sample-by-sample
 
                      par=F,
                      spare.cores=1,
+                     export.signat.gct=T, ## if TRUE gct files with expression values for each signature will be generated
+                     param.file=T,
                      log.file='run.log') {
     ## #######################################################################
     ## single sample GSEA
@@ -86,6 +89,28 @@ ssGSEA2 <- function (
     combine.mode <- match.arg(combine.mode)
     correl.type <- match.arg(correl.type)
 
+    ## ###################################################
+    ## parameter file
+    if(param.file){
+      ## save parameters used for ssGSEA
+      param.str = c(
+        paste('##', Sys.time()),
+        paste('input gct:', input.ds, sep='\t'),
+        paste('gene.set.database:', gene.set.databases, sep='\t'),
+        paste('sample.norm.type:', sample.norm.type, sep='\t'),
+        paste('weight:', weight, sep='\t'),
+        paste('statistic:', statistic, sep='\t'),
+        paste('output.score.type', output.score.type, sep='\t'),
+        paste('nperm:', nperm, sep='\t'),
+        paste('global.fdr:', global.fdr, sep='\t'),
+        paste('min.overlap:', min.overlap, sep='\t'),
+        paste('correl.type:', correl.type, sep='\t'),
+        paste('export.signat.gct:', export.signat.gct, sep='\t'),
+        paste('run.parallel:', par, sep='\t')
+      )
+      writeLines(param.str, con=paste(output.prefix, 'parameters.txt', sep='_'))
+    }
+    
     ## ####################################################
     ##            import dataset
     ## ####################################################
@@ -136,14 +161,13 @@ ssGSEA2 <- function (
             ## extract data 
             m <- dataset@mat
             gene.names <- sub('_[0-9]{1,4}$', '', dataset@rid)
-            #writeLines(gene.names, con='ids.txt')
             gene.descs <- dataset@rdesc
             sample.names <- dataset@cid
             sample.descs <- dataset@cdesc
           }
         } #end if 'rid not unique'
     } #end if try-error
-
+    m.org <- m
     ##View(sample.descs)
     # remove id column. will be repeated otherwise.
     #if('id' %in% colnames(sample.descs))
@@ -914,9 +938,21 @@ ssGSEA2 <- function (
     ol.numb.matrix.2 <- data.frame( ol.numb.matrix.2[locs, ], stringsAsFactors=F )
     ol.perc.matrix.2 <- data.frame( ol.perc.matrix.2[locs, ], stringsAsFactors=F )
     
+    
     gs.names.2 <- gs.names.2[locs]
     gs.descs.2 <- gs.descs.2[locs]
     gs.size.2 <- gs.size.2[locs]
+    
+    ## #######################################
+    ## FDR p-values
+    fdr.matrix.2 <- pval.matrix.2
+    if (global.fdr)
+      fdr.matrix.2 <- matrix ( p.adjust(unlist (fdr.matrix.2), method='fdr'),
+                            ncol=ncol(fdr.matrix.2))
+    else
+      for (i in 1:ncol(fdr.matrix.2))
+        fdr.matrix.2[,i] <- p.adjust (fdr.matrix.2[, i], method='fdr')
+    
     
     ################################################# 
     ## number of valid columns
@@ -927,11 +963,11 @@ ssGSEA2 <- function (
     #Signature.set.overlap.size <- apply(ol.numb.matrix.2, 1, paste, collapse='|')  
     #Signature.set.overlap.percent <- apply(ol.perc.matrix.2, 1, paste, collapse='|')  
     Signature.set.overlap <- ol.matrix.2
-    colnames(Signature.set.overlap) <- paste( 'Signature.set.overlap', sample.names)
+    colnames(Signature.set.overlap) <- paste( 'Signature.set.overlap', sample.names, sep='.')
     Signature.set.overlap.size <- ol.numb.matrix.2
-    colnames(Signature.set.overlap.size) <- paste( 'Signature.set.overlap.size', sample.names)
+    colnames(Signature.set.overlap.size) <- paste( 'Signature.set.overlap.size', sample.names, sep='.')
     Signature.set.overlap.percent <- ol.perc.matrix.2
-    colnames(Signature.set.overlap.percent) <- paste( 'Signature.set.overlap.percent', sample.names)
+    colnames(Signature.set.overlap.percent) <- paste( 'Signature.set.overlap.percent', sample.names, sep='.')
           
     # ###############################################
     # prepare for new gct export (R CMAP functions)
@@ -944,7 +980,7 @@ ssGSEA2 <- function (
                              No.columns.scored, 
                              stringsAsFactors = F)
     
-    
+
     ## #################################################
     ##  remove emtpy rows (gene set did not achieve sufficient
     ##  overlap in any sample column)
@@ -952,14 +988,67 @@ ssGSEA2 <- function (
     #locs <- which( unlist( apply(score.matrix.2, 1, function(x) sum(is.na(x))/length(x)) ) < 1 )
     locs <- which( No.columns.scored > 0)
     
-    score.matrix.2 <- score.matrix.2[locs, ]
-    pval.matrix.2 <- pval.matrix.2[locs, ]
+    score.matrix.2 <- data.frame( score.matrix.2[locs, ], stringsAsFactors = F)
+    pval.matrix.2 <- data.frame( pval.matrix.2[locs, ], stringsAsFactors = F)
+    fdr.matrix.2 <- data.frame( fdr.matrix.2[locs, ], stringsAsFactors = F)
     
     gs.names.2 <- gs.names.2[locs]
     #gs.descs.2 <- gs.descs.2[locs]
-    gs.descs.2 <- gs.descs.2[locs, ]
+    gs.descs.2 <- data.frame( gs.descs.2[locs, ], stringsAsFactors = F)
+
+    Signature.set.overlap <- data.frame( Signature.set.overlap[locs, ], stringsAsFactors = F)
     
+    rownames(Signature.set.overlap) <- gs.names.2
     
+    ## ##############################################
+    ## export signature GCT files
+    if(export.signat.gct){
+      
+      dir.create('signature_gct')
+      
+      #rownames(m) <- gene.names
+      #save(m, gene.names, sample.names, gene.descs, sample.descs, file='export.RData')
+      
+      
+      sapply(rownames(Signature.set.overlap), function(sig.name) {
+        
+        ## extract siganture members
+        signat <- Signature.set.overlap[sig.name, ]
+        gene.names.tmp <- as.character(signat) %>% strsplit(. , '\\|') %>% unlist %>% sub(';u$|;d$', '', .) %>% unique
+        gene.names.tmp.idx <- lapply(gene.names.tmp, function(x) which(gene.names %in% gene.names.tmp)) %>% unlist %>% unique 
+        
+        ## add score, pval and fdr to column description
+        if(nrow(sample.descs) > 0){
+          sample.descs <- data.frame(sample.descs,
+                                     signature.score=as.numeric(score.matrix.2[which( gs.names.2 == sig.name), ]),
+                                     signature.pvalue=as.numeric(pval.matrix.2[which( gs.names.2 == sig.name), ]), 
+                                     signature.fdr.pvalue=as.numeric(fdr.matrix.2[which( gs.names.2 == sig.name), ])
+                                     )
+        } else {
+          sample.descs <- data.frame(signature.score=as.numeric(score.matrix.2[which( gs.names.2 == sig.name), ]),
+                                     signature.pvalue=as.numeric(pval.matrix.2[which( gs.names.2 == sig.name), ]), 
+                                     signature.fdr.pvalue=as.numeric(fdr.matrix.2[which( gs.names.2 == sig.name), ])
+          )
+      
+        }
+        if(nrow(gene.descs) > 0)
+          gene.descs <- data.frame( gene.descs[gene.names.tmp.idx,] )
+        #save(m, gene.names, gs.names.2, pval.matrix.2, signat, sig.name, gene.names.tmp, gene.names.tmp.idx, file='export.RData')
+        
+        gct.tmp <- new('GCT')
+        gct.tmp@mat <- data.matrix( m.org[gene.names.tmp.idx, ] )
+        gct.tmp@rid <- make.unique( gene.names[ gene.names.tmp.idx ], sep='_' )
+        gct.tmp@cid <- sample.names
+        gct.tmp@cdesc <- sample.descs
+        gct.tmp@rdesc <- gene.descs
+        
+        gct.tmp@src <- gct.src
+        gct.tmp@version <- gct.version
+    
+        write.gct(gct.tmp, paste('signature_gct/', sig.name, '.gct', sep=''), appenddim = T)
+        
+      })
+    }
     
     ## #################################################
     ## Final count
@@ -998,17 +1087,17 @@ ssGSEA2 <- function (
     ## p-value correction
     #if (fdr.pvalue) {
         #F.GCT <- P.GCT
-        F.GCT.mat <- P.GCT@mat
-        if (global.fdr)
-            F.GCT.mat <- matrix ( p.adjust(unlist (F.GCT.mat), method='fdr'),
-                             ncol=ncol(F.GCT.mat))
-        else
-            for (i in 1:ncol(F.GCT.mat))
-                F.GCT.mat[,i] <- p.adjust (F.GCT.mat[,i], method='fdr')
+        # F.GCT.mat <- P.GCT@mat
+        # if (global.fdr)
+        #     F.GCT.mat <- matrix ( p.adjust(unlist (F.GCT.mat), method='fdr'),
+        #                      ncol=ncol(F.GCT.mat))
+        # else
+        #     for (i in 1:ncol(F.GCT.mat))
+        #         F.GCT.mat[,i] <- p.adjust (F.GCT.mat[,i], method='fdr')
 
         ## export
         F.GCT <- new('GCT')
-        F.GCT@mat <- F.GCT.mat
+        F.GCT@mat <- data.matrix(fdr.matrix.2) #F.GCT.mat
         F.GCT@rid <- gs.names.2
         F.GCT@cid <- sample.names
         F.GCT@rdesc <- gs.descs.2
@@ -1044,8 +1133,7 @@ ssGSEA2 <- function (
     ALL.GCT@version <- gct.version
     write.gct(ALL.GCT, paste (output.prefix, '-combined.gct', sep=''), appenddim = F)
     
-    
-    
+ 
     
     
     return(random.walk)
@@ -1135,3 +1223,4 @@ my.col2rgb <- function(color, alpha=80, maxColorValue=255){
     }
     return(out)
 }
+

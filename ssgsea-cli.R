@@ -2,6 +2,10 @@
 options( warn = -1 )
 suppressPackageStartupMessages(library("optparse"))
 
+this.file.dir <- commandArgs()[4]
+this.file.dir <- sub('^(.*/).*', '\\1', sub('.*?\\=','', this.file.dir))
+#cat(this.file.dir, '\n')
+
 # specify command line arguments
 option_list <- list(
   make_option( c("-i", "--input"), action='store', type='character',  dest='input.ds', help='Path to input GCT file.'),
@@ -14,10 +18,11 @@ option_list <- list(
   make_option( c("-s", "--score"), action='store', type='character',  dest='output.score.type', help='Score type: "ES" - enrichment score,  "NES" - normalized ES', default = 'NES'),
   make_option( c("-p", "--perm"), action='store', type='numeric',  dest='nperm', help='Number of permutations', default = 1000),
   make_option( c("-m", "--minoverlap"), action='store', type='numeric',  dest='min.overlap', help='Minimal overlap ebtween signature and data set.', default = 10),
-  make_option( c("-f", "--fdr"), action='store', type='logical',  dest='fdr.pvalue', help='Report FDR-corrected p-values.', default = TRUE),
+  #make_option( c("-f", "--fdr"), action='store', type='logical',  dest='fdr.pvalue', help='Report FDR-corrected p-values.', default = TRUE),
+  make_option( c("-e", "--export"), action='store', type='logical',  dest='export.signat.gct', help='For each signature export expression GCT files.', default = TRUE),
   make_option( c("-g", "--globalfdr"), action='store', type='logical',  dest='global.fdr', help='If TRUE global FDR across all data columns is calculated.', default = FALSE),
   make_option( c("-l", "--lightspeed"), action='store', type='logical',  dest='par', help='If TRUE processing wil be parallized across gene sets. (I ran out of single letters to define parameters...)', default = TRUE)
-)
+  )
 
 # parse command line parameters
 opt <- parse_args( OptionParser(option_list=option_list) )
@@ -31,19 +36,20 @@ log.file <- paste(opt$output.prefix, '_ssGSEA2.0.log', sep='')
 
 ## helper function to source files
 ## see: https://stackoverflow.com/questions/42815889/r-source-and-path-to-source-files
-source_here <- function(x, ...) {
-  dir <- "."
-  if(sys.nframe()>0) {
-    frame <- sys.frame(1)
-    if (!is.null(frame$ofile)) {
-      dir <- dirname(frame$ofile)
-    }
-  }
-  cat('....', dir, '....\n')
-  source(file.path(dir, x), ...)
-}
+# source_here <- function(x, ...) {
+#   dir <- "."
+#   if(sys.nframe()>0) {
+#     frame <- sys.frame(1)
+#     if (!is.null(frame$ofile)) {
+#       dir <- dirname(frame$ofile)
+#     }
+#   }
+#   #cat('....', dir, '....\n')
+#   source(file.path(dir, x), ...)
+# }
 #source_here('src/gct-io.R')
-source_here('src/ssGSEA2.0.R')
+#source_here('src/ssGSEA2.0.R')
+source(paste(this.file.dir, 'src/ssGSEA2.0.R', sep=''))
 #script.dir <- dirname(sys.frame(1)$ofile) ## get folder the script is located in
 #source(paste(script.dir, 'src/ssGSEA2.0.R', sep='/'))
 #source(paste(script.dir, 'src/gct-io.R', sep='/'))
@@ -64,7 +70,8 @@ res <- ssGSEA2(
 	nperm=opt$nperm,
 	min.overlap=opt$min.overlap,
   correl.type=opt$correl.type,
-	fdr.pvalue=opt$fdr.pvalue,
+	export.signat.gct=opt$export.signat.gct,
+#	fdr.pvalue=opt$fdr.pvalue,
 	global.fdr=opt$global.fdr,
   par=opt$par,
   spare.cores=spare.cores,
