@@ -959,9 +959,6 @@ ssGSEA2 <- function (
     No.columns.scored <- apply(score.matrix.2, 1, function(x) sum(!is.na(x))) 
 
     ## overlaps
-    #Signature.set.overlap <- apply(ol.matrix.2, 1, paste, collapse='|')  
-    #Signature.set.overlap.size <- apply(ol.numb.matrix.2, 1, paste, collapse='|')  
-    #Signature.set.overlap.percent <- apply(ol.perc.matrix.2, 1, paste, collapse='|')  
     Signature.set.overlap <- ol.matrix.2
     colnames(Signature.set.overlap) <- paste( 'Signature.set.overlap', sample.names, sep='.')
     Signature.set.overlap.size <- ol.numb.matrix.2
@@ -971,7 +968,6 @@ ssGSEA2 <- function (
           
     # ###############################################
     # prepare for new gct export (R CMAP functions)
-    #gs.descs.2 <- data.frame(Description=gs.descs.2, stringsAsFactors = F)
     gs.descs.2 <- data.frame(Signature.set.description=gs.descs.2,
                              Signature.set.size=gs.size.2,
                              #Signature.set.overlap.size,
@@ -985,7 +981,6 @@ ssGSEA2 <- function (
     ##  remove emtpy rows (gene set did not achieve sufficient
     ##  overlap in any sample column)
     ## #################################################
-    #locs <- which( unlist( apply(score.matrix.2, 1, function(x) sum(is.na(x))/length(x)) ) < 1 )
     locs <- which( No.columns.scored > 0)
     
     score.matrix.2 <- data.frame( score.matrix.2[locs, ], stringsAsFactors = F)
@@ -1005,19 +1000,24 @@ ssGSEA2 <- function (
     if(export.signat.gct){
       
       dir.create('signature_gct')
-      
-      #rownames(m) <- gene.names
       #save(m, gene.names, sample.names, gene.descs, sample.descs, file='export.RData')
-      
       
       sapply(rownames(Signature.set.overlap), function(sig.name) {
         
         ## extract siganture members
         signat <- Signature.set.overlap[sig.name, ]
-        gene.names.tmp <- as.character(signat) %>% strsplit(. , '\\|') %>% unlist %>% sub(';u$|;d$', '', .) %>% unique
+        #gene.names.tmp <- as.character(signat) %>% strsplit(. , '\\|') %>% unlist %>% sub(';u$|;d$', '', .) %>% unique
+        gene.names.tmp <- as.character(signat) %>% strsplit(. , '\\|') %>% unlist %>% unique # %>% sub(';u$|;d$', '', .)
+        
+        if(!is.null(gs.direction)){
+          gene.names.tmp.direction <- sub('^.*;(u|d)$', '\\1', gene.names.tmp)
+          gene.names.tmp <- sub(';u$|;d$', '', gene.names.tmp)
+          names(gene.names.tmp.direction) <- gene.names.tmp
+        }
+        # map to input dataset. code below handles redundant ids and return all occurences in the data
         gene.names.tmp.idx <- lapply(gene.names.tmp, function(x) which(gene.names %in% gene.names.tmp)) %>% unlist %>% unique 
         
-        ## add score, pval and fdr to column description
+        ## add score, pval and fdr to column annotations
         if(nrow(sample.descs) > 0){
           sample.descs <- data.frame(sample.descs,
                                      signature.score=as.numeric(score.matrix.2[which( gs.names.2 == sig.name), ]),
@@ -1031,8 +1031,19 @@ ssGSEA2 <- function (
           )
       
         }
-        if(nrow(gene.descs) > 0)
+        # row annotations
+        if(nrow(gene.descs) > 0){
           gene.descs <- data.frame( gene.descs[gene.names.tmp.idx,] )
+          if(!is.null(gs.direction)){
+            signature.direction <- gene.names.tmp.direction[ gene.names[gene.names.tmp.idx] ]
+            gene.descs <- data.frame(signature.direction, gene.descs)
+          }
+        } else {
+          if(!is.null(gs.direction)){
+            signature.direction <- gene.names.tmp.direction[ gene.names[gene.names.tmp.idx] ]
+            gene.descs <- data.frame(signature.direction, stringsAsFactors = F)
+          } 
+        }
         #save(m, gene.names, gs.names.2, pval.matrix.2, signat, sig.name, gene.names.tmp, gene.names.tmp.idx, file='export.RData')
         
         gct.tmp <- new('GCT')
