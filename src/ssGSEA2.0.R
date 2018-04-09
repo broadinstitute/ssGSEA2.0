@@ -168,10 +168,6 @@ ssGSEA2 <- function (
         } #end if 'rid not unique'
     } #end if try-error
     m.org <- m
-    ##View(sample.descs)
-    # remove id column. will be repeated otherwise.
-    #if('id' %in% colnames(sample.descs))
-    #  sample.descs <- sample.descs[, -which(colnames(sample.descs) == 'id')]
     gct.version <- dataset@version
     gct.src <- dataset@src
 
@@ -208,7 +204,10 @@ ssGSEA2 <- function (
             N.gs <- N.gs + GSDB[[i]]$N.gs
         }
     }
-
+    ## ####################################################
+    ##            gene set redundancy score
+    ## ####################################################
+    #gs.redundancy.mat <-  
 
     ## ####################################################
     ##            Sample normalization
@@ -399,18 +398,27 @@ ssGSEA2 <- function (
                 ## directionality of the gene set
                 if(!is.null(gene.set.direction)){
 
+                  ## number of 'd' features
+                  d.idx <- which(gene.set.direction=='d')
+                  Nh.d <- length(d.idx)
+                  Nm.d <-  N - Nh.d
+                  
+                  ## number of 'u' features
+                  u.idx <- which(gene.set.direction=='u')
+                  Nh.u <- length(u.idx)
+                  Nm.u <-  N - Nh.u
+                  
+                  ## number of 'u' and 'd' features
+                 # Nh.u.d.idx <- Nh.d + Nh.u
+                  
                     ########################################
                     ## up-regulated part
                     ########################################
-                    u.idx <- which(gene.set.direction=='u')
-
-                    ## number of 'u' features
-                    Nh.u <- length(u.idx)
-                    Nm.u <-  N - Nh.u
-
+                  
                     #if(length(u.idx) > 1){
-                    if(length(u.idx) > 0){ ## 20180327
-
+                    #if(length(u.idx) > 0){ ## 20180327
+                    #if(length(u.idx) > 1 & length(d.idx) > 1 ){ ## 20180408
+                  if(Nh.u > 1){
                         ## locations of 'up' features
                         tag.u <- sign( match(ordered.gene.list, gene.set2[ u.idx ], nomatch=0) )
                         ind.u = which(tag.u == 1)
@@ -451,13 +459,14 @@ ssGSEA2 <- function (
                     ## ######################################
                     ## down-regulated part
                     ## ######################################
-                    d.idx <- which(gene.set.direction=='d')
-                    Nh.d <- length(d.idx)
-                    Nm.d <-  N - Nh.d
+                    #d.idx <- which(gene.set.direction=='d')
+                    #Nh.d <- length(d.idx)
+                    #Nm.d <-  N - Nh.d
 
                     #if(length(d.idx) > 1){
-                    if(length(d.idx) > 0){ ## 20180327
-                      
+                    #if(length(d.idx) > 1){ ## 20180327
+                    #if(length(d.idx) > 1 & length(u.idx) > 1 ){ ## 20180408
+                    if(Nh.d > 1){  
                         ## locations of 'd' features
                         tag.d <- sign( match(ordered.gene.list, gene.set2[ d.idx ], nomatch=0) )
                         ind.d = which(tag.d == 1)
@@ -493,6 +502,15 @@ ssGSEA2 <- function (
                         up.d=0
                         down.d=0
                     }
+                    ## ############################
+                    ## make sure to meet the min.overlap
+                    ## threshold
+                    if(Nh.d == 1 & Nh.u < min.overlap | Nh.u == 1 & Nh.d < min.overlap){
+                      ES.u <- ES.d <- RES.u <- RES.d <- 0
+                      arg.ES <- arg.ES <- NA
+                      ind.u <- ind.d <- NULL
+                    }
+                  
                     ## ###########################
                     ## combine the results
                     ES <- ES.u - ES.d
@@ -824,8 +842,9 @@ ssGSEA2 <- function (
     ol.perc.matrix <- matrix(unlist(tmp.ol.perc), byrow=T, nrow=N.gs)
     
     ## gene site size
-    gs.size <- size.G #sapply(tmp, function(x) x$gene.set.size)
+    gs.size <- size.G
     
+    ## store random walk
     random.walk <- lapply(tmp, function(x) x$random.walk)
 
     cat('main loop: ')

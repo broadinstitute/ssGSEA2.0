@@ -46,19 +46,6 @@ spare.cores         = 1                   ## No. of cores to leave idle
 ## - in a perfect world users don't have to worry about the stuff below...
 ## #####################################################################
 
-## helper function to source files
-## see: https://stackoverflow.com/questions/42815889/r-source-and-path-to-source-files
-source_here <- function(x, ...) {
-  dir <- "."
-  if(sys.nframe()>0) {
-    frame <- sys.frame(1)
-    if (!is.null(frame$ofile)) {
-      dir <- dirname(frame$ofile)
-    }
-  }
-  source(file.path(dir, x), ...)
-}
-
 ## #################################
 ## directory with gct files
 gct.dir.ok=F
@@ -98,9 +85,9 @@ while(!db.ok){
 ##                          START
 ## ######################################################################
 #source(paste(script.dir, 'src/ssGSEA2.0.R', sep='/'))
-#source(paste(script.dir, 'src/ssGSEA2.0.R', sep='/'))
+source(paste(script.dir, 'src/ssGSEA2.0.R', sep='/'))
 #source(paste(script.dir, 'src/gct-io.R', sep='/'))
-source_here('src/ssGSEA2.0.R')
+#source_here('src/ssGSEA2.0.R')
 #source_here('src/ssGSEA2.0.R')
 
 ## #############################################

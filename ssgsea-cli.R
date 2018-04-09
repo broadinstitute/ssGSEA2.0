@@ -2,9 +2,10 @@
 options( warn = -1 )
 suppressPackageStartupMessages(library("optparse"))
 
+# parse the directory this file is located
 this.file.dir <- commandArgs()[4]
-this.file.dir <- sub('^(.*/).*', '\\1', sub('.*?\\=','', this.file.dir))
-#cat(this.file.dir, '\n')
+this.file.dir <- sub('^(.*(/|\\\\)).*', '\\1', sub('.*?\\=','', this.file.dir))
+#cat('DIRECTORY: ',this.file.dir, '\n')
 
 # specify command line arguments
 option_list <- list(
@@ -33,26 +34,7 @@ log.file <- paste(opt$output.prefix, '_ssGSEA2.0.log', sep='')
 
 ## #####################################
 ## source the actual script
-
-## helper function to source files
-## see: https://stackoverflow.com/questions/42815889/r-source-and-path-to-source-files
-# source_here <- function(x, ...) {
-#   dir <- "."
-#   if(sys.nframe()>0) {
-#     frame <- sys.frame(1)
-#     if (!is.null(frame$ofile)) {
-#       dir <- dirname(frame$ofile)
-#     }
-#   }
-#   #cat('....', dir, '....\n')
-#   source(file.path(dir, x), ...)
-# }
-#source_here('src/gct-io.R')
-#source_here('src/ssGSEA2.0.R')
 source(paste(this.file.dir, 'src/ssGSEA2.0.R', sep=''))
-#script.dir <- dirname(sys.frame(1)$ofile) ## get folder the script is located in
-#source(paste(script.dir, 'src/ssGSEA2.0.R', sep='/'))
-#source(paste(script.dir, 'src/gct-io.R', sep='/'))
 
 ## ######################################################################################################
 ##
