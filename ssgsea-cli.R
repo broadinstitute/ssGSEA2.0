@@ -30,7 +30,7 @@ opt <- parse_args( OptionParser(option_list=option_list) )
 
 # hard-coded parameters
 spare.cores <- 0 # use all available cpus
-log.file <- paste(opt$output.prefix, '_ssGSEA2.0.log', sep='')
+log.file <- paste(opt$output.prefix, '_ssgsea.log.txt', sep='')
 
 ## #####################################
 ## source the actual script
