@@ -1,11 +1,13 @@
 #!/usr/bin/env Rscript
 options( warn = -1 )
-suppressPackageStartupMessages(library("optparse"))
+
+suppressPackageStartupMessages( if(!require("pacman")) install.packages ("pacman") )
+suppressPackageStartupMessages(p_load("optparse"))
 
 # parse the directory this file is located
 this.file.dir <- commandArgs()[4]
 this.file.dir <- sub('^(.*(/|\\\\)).*', '\\1', sub('.*?\\=','', this.file.dir))
-#cat('DIRECTORY: ',this.file.dir, '\n')
+
 
 # specify command line arguments
 option_list <- list(
@@ -19,10 +21,10 @@ option_list <- list(
   make_option( c("-s", "--score"), action='store', type='character',  dest='output.score.type', help='Score type: "ES" - enrichment score,  "NES" - normalized ES', default = 'NES'),
   make_option( c("-p", "--perm"), action='store', type='numeric',  dest='nperm', help='Number of permutations', default = 1000),
   make_option( c("-m", "--minoverlap"), action='store', type='numeric',  dest='min.overlap', help='Minimal overlap ebtween signature and data set.', default = 10),
-  #make_option( c("-f", "--fdr"), action='store', type='logical',  dest='fdr.pvalue', help='Report FDR-corrected p-values.', default = TRUE),
+  make_option( c("-x", "--extendedoutput"), action='store', type='logical',  dest='extended.output', help='It TRUE additional stats on signature coverage etc. will be included as row annotations in the GCT results files.', default = TRUE),
   make_option( c("-e", "--export"), action='store', type='logical',  dest='export.signat.gct', help='For each signature export expression GCT files.', default = TRUE),
   make_option( c("-g", "--globalfdr"), action='store', type='logical',  dest='global.fdr', help='If TRUE global FDR across all data columns is calculated.', default = FALSE),
-  make_option( c("-l", "--lightspeed"), action='store', type='logical',  dest='par', help='If TRUE processing wil be parallized across gene sets. (I ran out of single letters to define parameters...)', default = TRUE)
+  make_option( c("-l", "--lightspeed"), action='store', type='logical',  dest='par', help='If TRUE processing will be parallized across gene sets. (I ran out of single letters to define parameters...)', default = TRUE)
   )
 
 # parse command line parameters
@@ -53,6 +55,7 @@ res <- ssGSEA2(
 	min.overlap=opt$min.overlap,
   correl.type=opt$correl.type,
 	export.signat.gct=opt$export.signat.gct,
+	extended.output=opt$extended.output,
 #	fdr.pvalue=opt$fdr.pvalue,
 	global.fdr=opt$global.fdr,
   par=opt$par,

@@ -7,19 +7,15 @@
 ##   4) handle missing values
 ##   5) cmapR functions for data import/export
 ##   6) produce more extensive output, e.g. dataset/database overlaps, etc.
-
-#source(paste( dirname(sys.frame(1)$ofile), 'gct-io.R', sep='/'))
-suppressPackageStartupMessages(require(pacman))
+if(!suppressPackageStartupMessages(require("pacman"))){
+  install.packages("pacman")
+}
 if(!suppressPackageStartupMessages(require(rhdf5))){
   source("https://bioconductor.org/biocLite.R")
   biocLite("rhdf5")
 }
 if(!suppressPackageStartupMessages(require(cmapR)))
   devtools::install_github("cmap/cmapR")
-
-suppressPackageStartupMessages(require(cmapR))
-if (!require("pacman")) install.packages ("pacman")
-require('pacman')
 
 p_load(gtools)
 p_load(verification)
@@ -56,7 +52,7 @@ ssGSEA2 <- function (
                      correl.type         = c("rank", "z.score", "symm.rank"),  ## correlation type: "rank", "z.score", "symm.rank"
                      #fdr.pvalue          = TRUE,    ## output adjusted (FDR) p-values
                      global.fdr          = FALSE,   ## if TRUE calculate global FDR; else calculate FDR sample-by-sample
-
+                     extended.output     = TRUE,    ## if TRUE the result GCT files will contain statistics about gene coverage etc.  
                      par=F,
                      spare.cores=1,
                      export.signat.gct=T, ## if TRUE gct files with expression values for each signature will be generated
@@ -987,14 +983,18 @@ ssGSEA2 <- function (
           
     # ###############################################
     # prepare for new gct export (R CMAP functions)
-    gs.descs.2 <- data.frame(Signature.set.description=gs.descs.2,
+    if(extended.output){
+          gs.descs.2 <- data.frame(Signature.set.description=gs.descs.2,
                              Signature.set.size=gs.size.2,
-                             #Signature.set.overlap.size,
                              Signature.set.overlap.percent,
                              Signature.set.overlap, 
                              No.columns.scored, 
                              stringsAsFactors = F)
-    
+    } else {
+      gs.descs.2 <- data.frame(Signature.set.description=gs.descs.2,
+                               Signature.set.size=gs.size.2,
+                               stringsAsFactors = F)
+    }
 
     ## #################################################
     ##  remove emtpy rows (gene set did not achieve sufficient
@@ -1007,11 +1007,9 @@ ssGSEA2 <- function (
     fdr.matrix.2 <- data.frame( fdr.matrix.2[locs, ], stringsAsFactors = F)
     
     gs.names.2 <- gs.names.2[locs]
-    #gs.descs.2 <- gs.descs.2[locs]
     gs.descs.2 <- data.frame( gs.descs.2[locs, ], stringsAsFactors = F)
-
-    Signature.set.overlap <- data.frame( Signature.set.overlap[locs, ], stringsAsFactors = F)
     
+    Signature.set.overlap <- data.frame( Signature.set.overlap[locs, ], stringsAsFactors = F)
     rownames(Signature.set.overlap) <- gs.names.2
     
     ## ##############################################
@@ -1019,13 +1017,11 @@ ssGSEA2 <- function (
     if(export.signat.gct){
       
       dir.create('signature_gct')
-      #save(m, gene.names, sample.names, gene.descs, sample.descs, file='export.RData')
       
       sapply(rownames(Signature.set.overlap), function(sig.name) {
         
         ## extract siganture members
         signat <- Signature.set.overlap[sig.name, ]
-        #gene.names.tmp <- as.character(signat) %>% strsplit(. , '\\|') %>% unlist %>% sub(';u$|;d$', '', .) %>% unique
         gene.names.tmp <- as.character(signat) %>% strsplit(. , '\\|') %>% unlist %>% unique # %>% sub(';u$|;d$', '', .)
         
         if(!is.null(gs.direction)){
@@ -1055,7 +1051,7 @@ ssGSEA2 <- function (
           gene.descs <- data.frame( gene.descs[gene.names.tmp.idx,] )
           if(!is.null(gs.direction)){
             signature.direction <- gene.names.tmp.direction[ gene.names[gene.names.tmp.idx] ]
-            gene.descs <- data.frame(signature.direction, gene.descs)
+            gene.descs <- data.frame(signature.direction, gene.descs, stringsAsFactors = F)
           }
         } else {
           if(!is.null(gs.direction)){
@@ -1063,8 +1059,7 @@ ssGSEA2 <- function (
             gene.descs <- data.frame(signature.direction, stringsAsFactors = F)
           } 
         }
-        #save(m, gene.names, gs.names.2, pval.matrix.2, signat, sig.name, gene.names.tmp, gene.names.tmp.idx, file='export.RData')
-        
+        ## export gene set 
         gct.tmp <- new('GCT')
         gct.tmp@mat <- data.matrix( m.org[gene.names.tmp.idx, ] )
         gct.tmp@rid <- make.unique( gene.names[ gene.names.tmp.idx ], sep='_' )
@@ -1112,34 +1107,20 @@ ssGSEA2 <- function (
     #write.gct(P.GCT, paste (output.prefix, '-pvalues' ,'_', paste(dim(P.GCT@mat), collapse ='x'),'.gct', sep=''), appenddim = F)
     write.gct(P.GCT, paste (output.prefix, '-pvalues.gct', sep=''), appenddim = F)
     
-
-    ##################################################
-    ## p-value correction
-    #if (fdr.pvalue) {
-        #F.GCT <- P.GCT
-        # F.GCT.mat <- P.GCT@mat
-        # if (global.fdr)
-        #     F.GCT.mat <- matrix ( p.adjust(unlist (F.GCT.mat), method='fdr'),
-        #                      ncol=ncol(F.GCT.mat))
-        # else
-        #     for (i in 1:ncol(F.GCT.mat))
-        #         F.GCT.mat[,i] <- p.adjust (F.GCT.mat[,i], method='fdr')
-
-        ## export
-        F.GCT <- new('GCT')
-        F.GCT@mat <- data.matrix(fdr.matrix.2) #F.GCT.mat
-        F.GCT@rid <- gs.names.2
-        F.GCT@cid <- sample.names
-        F.GCT@rdesc <- gs.descs.2
-        if(nrow(sample.descs) > 0)
-            F.GCT@cdesc <- data.frame(sample.descs, stringsAsFactors = F)
-        F.GCT@src <- gct.src
-        F.GCT@version <- gct.version
-        #write.gct(F.GCT, paste (output.prefix, '-fdr-pvalues' ,'_', paste(dim(F.GCT@mat), collapse ='x'),'.gct', sep=''), appenddim = F)
-        write.gct(F.GCT, paste (output.prefix, '-fdr-pvalues.gct', sep=''), appenddim = F)
-
-   # }
-
+    ## ##############################################  
+    ## FDR matrix
+    F.GCT <- new('GCT')
+    F.GCT@mat <- data.matrix(fdr.matrix.2) #F.GCT.mat
+    F.GCT@rid <- gs.names.2
+    F.GCT@cid <- sample.names
+    F.GCT@rdesc <- gs.descs.2
+    if(nrow(sample.descs) > 0)
+      F.GCT@cdesc <- data.frame(sample.descs, stringsAsFactors = F)
+    F.GCT@src <- gct.src
+    F.GCT@version <- gct.version
+    #write.gct(F.GCT, paste (output.prefix, '-fdr-pvalues' ,'_', paste(dim(F.GCT@mat), collapse ='x'),'.gct', sep=''), appenddim = F)
+    write.gct(F.GCT, paste (output.prefix, '-fdr-pvalues.gct', sep=''), appenddim = F)
+    
     ## ######################################################################
     ## generate a single CGT containing scores as data matrix and
     ## p-values, fdr-p-values as row annotation matrices
@@ -1188,7 +1169,7 @@ Read.GeneSets.db2 <- function (gs.db, thres.min = 2, thres.max = 2000) {
     temp <- readLines(gs.db)
     temp <- strsplit(temp, '\t')
     temp.size.G <- sapply(temp, function(x) length(x)-2)
-
+    
     ## filter gene sets according to size
     rm.idx <- which(temp.size.G < thres.min | temp.size.G > thres.max)
     if(length(rm.idx) > 0){
@@ -1203,6 +1184,16 @@ Read.GeneSets.db2 <- function (gs.db, thres.min = 2, thres.max = 2000) {
     gs <- lapply(temp, function(x)x[3:length(x)])
     gs.names <- sapply(temp, function(x)x[1])
     gs.desc <- sapply(temp, function(x)x[2])
+    
+    ## check whether gene sets are unique
+    gs.unique <- lapply(gs, unique)
+    gs.unique.size.G <- sapply(gs.unique, length)
+    gs.not.unique.idx <- which(gs.unique.size.G < temp.size.G)
+    if( length(gs.not.unique.idx) > 0 ){
+      warning("\n\nDuplicated gene set members detected. Removing redundant members from:\n\n", paste(gs.names[gs.not.unique.idx], collapse='\n'))
+      gs <- gs.unique
+      temp.size.G <- gs.unique.size.G 
+    }
     size.G <- temp.size.G
     names(gs) <- names(gs.names) <- names(gs.desc) <- names(size.G) <- gs.names
 

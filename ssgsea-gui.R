@@ -1,5 +1,5 @@
 ################################################################################################################
-## Filename: 1_run_ssGSEA.r
+## Filename: ssgsea-gui.r
 ## Created: September 09, 2017
 ## Author(s): Karsten Krug
 ##
@@ -24,7 +24,6 @@ rm(list=ls())
 script.dir <- dirname(sys.frame(1)$ofile) ## get folder the script is located in
 os <- Sys.info()['sysname'] ## determine operating system
 if (!require("pacman")) install.packages ("pacman")
-require('pacman')
 
 ## ##########################################################
 ##  define parameters below:
@@ -40,6 +39,8 @@ min.overlap         = 10                  ## minimal overlap between gene set an
 correl.type         = "z.score"           ## 'rank', 'z.score', 'symm.rank'
 par                 = T                   ## use 'doParallel' package?
 spare.cores         = 1                   ## No. of cores to leave idle
+export.signat.gct   = T                   ## if TRUE gene set GCT files will be exported 
+extended.output     = T                   ## if TRUE the GCT files will contain stats on gene set overlaps etc.   
 
 ## #####################################################################
 ##   end paramaters
@@ -84,11 +85,7 @@ while(!db.ok){
 ## ######################################################################
 ##                          START
 ## ######################################################################
-#source(paste(script.dir, 'src/ssGSEA2.0.R', sep='/'))
 source(paste(script.dir, 'src/ssGSEA2.0.R', sep='/'))
-#source(paste(script.dir, 'src/gct-io.R', sep='/'))
-#source_here('src/ssGSEA2.0.R')
-#source_here('src/ssGSEA2.0.R')
 
 ## #############################################
 ## prepare output folder
@@ -152,7 +149,8 @@ for(i in names(gct.files)){
     cat('Running ssSGEA on:', sub('.*/', '', input.ds), '\n\n')
 
     ## run ssGSEA
-    gsea.res <- ssGSEA2(input.ds, gene.set.databases=gene.set.databases, sample.norm.type=sample.norm.type, weight=weight,statistic=statistic, output.score.type = output.score.type, nperm  = nperm, min.overlap  = min.overlap, correl.type = correl.type, output.prefix = paste(i), par=par, spare.cores=spare.cores, param.file=F )
+    gsea.res <- ssGSEA2(input.ds, gene.set.databases=gene.set.databases, sample.norm.type=sample.norm.type, weight=weight,statistic=statistic, output.score.type = output.score.type, nperm  = nperm, min.overlap  = min.overlap, correl.type = correl.type, output.prefix = paste(i), par=par, 
+                        spare.cores=spare.cores, param.file=F, export.signat.gct = export.signat.gct, extended.output = extended.output )
 
     ## save object
     save(gsea.res, file=paste(i, '.RData', sep=''))
