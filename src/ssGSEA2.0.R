@@ -947,11 +947,12 @@ ssGSEA2 <- function (
     unique.gene.sets <- unique(gs.names.2)
     locs <- match(unique.gene.sets, gs.names.2)
 
-    score.matrix.2 <- data.frame( score.matrix.2[locs, ], stringsAsFactors=F )#[locs, ]
-    pval.matrix.2 <- data.frame( pval.matrix.2[locs, ], stringsAsFactors=F )#[locs, ]
-    ol.matrix.2 <- data.frame( ol.matrix.2[locs, ], stringsAsFactors=F )
-    ol.numb.matrix.2 <- data.frame( ol.numb.matrix.2[locs, ], stringsAsFactors=F )
-    ol.perc.matrix.2 <- data.frame( ol.perc.matrix.2[locs, ], stringsAsFactors=F )
+    
+    score.matrix.2 <- data.frame( matrix( score.matrix.2[locs, ], nrow=length(locs) ), stringsAsFactors=F )
+    pval.matrix.2 <- data.frame( matrix( pval.matrix.2[locs, ], nrow=length(locs) ), stringsAsFactors=F )
+    ol.matrix.2 <- data.frame( matrix(ol.matrix.2[locs, ], nrow=length(locs) ), stringsAsFactors=F )
+    ol.numb.matrix.2 <- data.frame( matrix(ol.numb.matrix.2[locs, ], nrow=length(locs) ), stringsAsFactors=F )
+    ol.perc.matrix.2 <- data.frame( matrix(ol.perc.matrix.2[locs, ], nrow=length(locs)), stringsAsFactors=F )
     
     
     gs.names.2 <- gs.names.2[locs]
@@ -980,10 +981,11 @@ ssGSEA2 <- function (
     colnames(Signature.set.overlap.size) <- paste( 'Signature.set.overlap.size', sample.names, sep='.')
     Signature.set.overlap.percent <- ol.perc.matrix.2
     colnames(Signature.set.overlap.percent) <- paste( 'Signature.set.overlap.percent', sample.names, sep='.')
-          
+    
     # ###############################################
     # prepare for new gct export (R CMAP functions)
     if(extended.output){
+      
           gs.descs.2 <- data.frame(Signature.set.description=gs.descs.2,
                              Signature.set.size=gs.size.2,
                              Signature.set.overlap.percent,
