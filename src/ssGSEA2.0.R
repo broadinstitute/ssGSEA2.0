@@ -77,6 +77,9 @@ ssGSEA2 <- function (
     ## initialize log-file
     cat('##', format(Sys.time()), '\n', file=log.file)
 
+    ## miximal file path lenght; Windows OS support max. 259 characters
+    max.nchar.file.path <- 259
+  
     ## ###################################################
     ## arguments
     sample.norm.type <- match.arg( sample.norm.type)
@@ -156,7 +159,7 @@ ssGSEA2 <- function (
             
             ## extract data 
             m <- dataset@mat
-            gene.names <- sub('_[0-9]{1,4}$', '', dataset@rid)
+            gene.names <- sub('_[0-9]{1,5}$', '', dataset@rid)
             gene.descs <- dataset@rdesc
             sample.names <- dataset@cid
             sample.descs <- dataset@cdesc
@@ -242,7 +245,6 @@ ssGSEA2 <- function (
     ## - in case of PTM signatures extract
     ##   the directionality information
     ## ####################################################
-    #gs.size <- sapply(gs, length)
     if(length(grep(';u|;d', gs[[1]])) > 0 ){  ## PTMsigDB
         gs <- lapply(gs, function(x) x[ sub(';u$|;d$','', x) %in% gene.names ])
         gs.direction <- lapply(gs, function(x) sub('^.*;(d|u)$', '\\1', x))
@@ -404,12 +406,10 @@ ssGSEA2 <- function (
                   Nh.u <- length(u.idx)
                   Nm.u <-  N - Nh.u
                   
-                  ## number of 'u' and 'd' features
-                 # Nh.u.d.idx <- Nh.d + Nh.u
-                  
-                    ########################################
-                    ## up-regulated part
-                    ########################################
+                 
+                  ########################################
+                  ## up-regulated part
+                  ########################################
                   
                     #if(length(u.idx) > 1){
                     #if(length(u.idx) > 0){ ## 20180327
@@ -1020,7 +1020,8 @@ ssGSEA2 <- function (
       
       dir.create('signature_gct')
       
-      sapply(rownames(Signature.set.overlap), function(sig.name) {
+      #sapply(rownames(Signature.set.overlap), function(sig.name) {
+      for( sig.name in rownames(Signature.set.overlap)) {
         
         ## extract siganture members
         signat <- Signature.set.overlap[sig.name, ]
@@ -1033,48 +1034,62 @@ ssGSEA2 <- function (
         }
         # map to input dataset. code below handles redundant ids and return all occurences in the data
         gene.names.tmp.idx <- lapply(gene.names.tmp, function(x) which(gene.names %in% gene.names.tmp)) %>% unlist %>% unique 
-        
+
         ## add score, pval and fdr to column annotations
         if(nrow(sample.descs) > 0){
-          sample.descs <- data.frame(sample.descs,
+          sample.descs.tmp <- data.frame(sample.descs,
                                      signature.score=as.numeric(score.matrix.2[which( gs.names.2 == sig.name), ]),
                                      signature.pvalue=as.numeric(pval.matrix.2[which( gs.names.2 == sig.name), ]), 
-                                     signature.fdr.pvalue=as.numeric(fdr.matrix.2[which( gs.names.2 == sig.name), ])
+                                     signature.fdr.pvalue=as.numeric(fdr.matrix.2[which( gs.names.2 == sig.name), ]),
+                                     stringsAsFactors=F
                                      )
         } else {
-          sample.descs <- data.frame(signature.score=as.numeric(score.matrix.2[which( gs.names.2 == sig.name), ]),
+          sample.descs.tmp <- data.frame(signature.score=as.numeric(score.matrix.2[which( gs.names.2 == sig.name), ]),
                                      signature.pvalue=as.numeric(pval.matrix.2[which( gs.names.2 == sig.name), ]), 
-                                     signature.fdr.pvalue=as.numeric(fdr.matrix.2[which( gs.names.2 == sig.name), ])
-          )
-      
+                                     signature.fdr.pvalue=as.numeric(fdr.matrix.2[which( gs.names.2 == sig.name), ]),
+                                     stringsAsFactors=F
+                                     )
         }
+        ## add names
+        rownames(sample.descs.tmp) <- sample.names
+        
         # row annotations
         if(nrow(gene.descs) > 0){
-          gene.descs <- data.frame( gene.descs[gene.names.tmp.idx,] )
+          gene.descs.tmp <- data.frame( gene.descs[gene.names.tmp.idx,] )
           if(!is.null(gs.direction)){
             signature.direction <- gene.names.tmp.direction[ gene.names[gene.names.tmp.idx] ]
-            gene.descs <- data.frame(signature.direction, gene.descs, stringsAsFactors = F)
+            gene.descs.tmp <- data.frame(signature.direction, gene.descs.tmp, stringsAsFactors = F)
           }
         } else {
           if(!is.null(gs.direction)){
             signature.direction <- gene.names.tmp.direction[ gene.names[gene.names.tmp.idx] ]
-            gene.descs <- data.frame(signature.direction, stringsAsFactors = F)
-          } 
+            gene.descs.tmp <- data.frame(signature.direction, stringsAsFactors = F)
+          } else {
+            gene.descs.tmp <- NULL
+          }
         }
-        ## export gene set 
+        
+        ## export gene set
         gct.tmp <- new('GCT')
         gct.tmp@mat <- data.matrix( m.org[gene.names.tmp.idx, ] )
         gct.tmp@rid <- make.unique( gene.names[ gene.names.tmp.idx ], sep='_' )
         gct.tmp@cid <- sample.names
-        gct.tmp@cdesc <- sample.descs
-        gct.tmp@rdesc <- gene.descs
+        gct.tmp@cdesc <- sample.descs.tmp
+        if(!is.null(gene.descs.tmp))
+          gct.tmp@rdesc <- gene.descs.tmp
         
         gct.tmp@src <- gct.src
-        gct.tmp@version <- gct.version
     
-        write.gct(gct.tmp, paste('signature_gct/', sig.name, '.gct', sep=''), appenddim = T)
+        ## check length of filepath
+        ## Windows OS supports maximum of 259 characters in a file path 
+        fn <- paste(getwd(),'/signature_gct/', sig.name, sep='')
+        if((nchar(fn)+15) > max.nchar.file.path){
+          fn <- paste( unlist(strsplit(fn,''))[1:(max.nchar.file.path-15)], collapse='')
+          cat(nchar(fn), ' ', fn ,'\n')
+        }
+        write.gct(gct.tmp, ofile=sub('.*/', 'signature_gct/',fn), appenddim = T)
         
-      })
+      }
     }
     
     ## #################################################
@@ -1089,10 +1104,16 @@ ssGSEA2 <- function (
     V.GCT@rid <- gs.names.2
     V.GCT@cid <- sample.names
     V.GCT@rdesc <- gs.descs.2
-    if(nrow(sample.descs) > 0)
-      V.GCT@cdesc <- data.frame(sample.descs, stringsAsFactors = F)
+    if(nrow(sample.descs) > 0){
+      cdesc.final <- data.frame(sample.descs, stringsAsFactors = F)
+      rownames(cdesc.final) <- sample.names 
+      #V.GCT@cdesc <- data.frame(sample.descs, stringsAsFactors = F)
+      V.GCT@cdesc <- cdesc.final
+    }
     V.GCT@src <- gct.src
-    V.GCT@version <- gct.version
+    
+    #V.GCT@version <- gct.version
+    #browser()
     write.gct(V.GCT, paste (output.prefix, '-scores.gct', sep=''), appenddim = F)
 
     #################################################
@@ -1103,9 +1124,10 @@ ssGSEA2 <- function (
     P.GCT@cid <- sample.names
     P.GCT@rdesc <- gs.descs.2
     if(nrow(sample.descs) > 0)
-      P.GCT@cdesc <- data.frame(sample.descs, stringsAsFactors = F)
+      P.GCT@cdesc <- cdesc.final
+      #P.GCT@cdesc <- data.frame(sample.descs, stringsAsFactors = F)
     P.GCT@src <- gct.src
-    P.GCT@version <- gct.version
+    #P.GCT@version <- gct.version
     #write.gct(P.GCT, paste (output.prefix, '-pvalues' ,'_', paste(dim(P.GCT@mat), collapse ='x'),'.gct', sep=''), appenddim = F)
     write.gct(P.GCT, paste (output.prefix, '-pvalues.gct', sep=''), appenddim = F)
     
@@ -1117,9 +1139,10 @@ ssGSEA2 <- function (
     F.GCT@cid <- sample.names
     F.GCT@rdesc <- gs.descs.2
     if(nrow(sample.descs) > 0)
-      F.GCT@cdesc <- data.frame(sample.descs, stringsAsFactors = F)
+      F.GCT@cdesc <- cdesc.final
+      #F.GCT@cdesc <- data.frame(sample.descs, stringsAsFactors = F)
     F.GCT@src <- gct.src
-    F.GCT@version <- gct.version
+    #F.GCT@version <- gct.version
     #write.gct(F.GCT, paste (output.prefix, '-fdr-pvalues' ,'_', paste(dim(F.GCT@mat), collapse ='x'),'.gct', sep=''), appenddim = F)
     write.gct(F.GCT, paste (output.prefix, '-fdr-pvalues.gct', sep=''), appenddim = F)
     
@@ -1141,7 +1164,8 @@ ssGSEA2 <- function (
     ALL.GCT@cid <- sample.names
     ALL.GCT@rdesc <- gs.descs.2
     if(nrow(sample.descs) > 0)
-      ALL.GCT@cdesc <- data.frame(sample.descs, stringsAsFactors = F)
+      ALL.GCT@cdesc <- cdesc.final
+      #ALL.GCT@cdesc <- data.frame(sample.descs, stringsAsFactors = F)
     ALL.GCT@src <- gct.src
     ALL.GCT@version <- gct.version
     write.gct(ALL.GCT, paste (output.prefix, '-combined.gct', sep=''), appenddim = F)
