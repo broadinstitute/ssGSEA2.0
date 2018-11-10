@@ -1,5 +1,43 @@
-## Single-sample GSEA 2.0
-The R-scripts ```ssgsea-gui.R``` and ```ssgsea-cli.R``` provide wrapper to the ssGSEA R-program which performs the actual single sample Gene Set Enrichment analysis (ssGSEA). ```ssgsea-cli.R``` can be executed from the command line, please see ```ssgsea-cli.R --help``` for instructions.
+## ssGSEA2.0 / PTM-SEA / PTMsigDB
+
+Tools to perform gene-centric **single sample Gene Set Enrichment Analysis (ssGSEA)** and site-centric **PTM Signature Enrichment Analysis (PTM-SEA)**.
+
+
+#### PTM signatures database (PTMsigDB)
+PTMsigDB is a database comprised of modification site-specific signatures of perturbations, kinase activities and signaling pathways curated from more than 2,500 publications. 
+
+[v1.8.1](https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/c1.all.v6.1.symbols.gmt)
+
+
+#### PTM-Signature Enrichment analysis (PTM-SEA)
+PMT-SEA is an adaption of ssGSEA to perform site-specific siganture analysis by scoring PTMsigDB's bi-derectional signature-sets.
+
+
+
+https://github.com/broadinstitute/ssGSEA2.0/blob/master/db/c1.all.v6.1.symbols.gmt
+
+
+### Single-sample GSEA 2.0
+
+
+
+### Instructions to run ssGSEA2.0 / PTM-SEA
+
+The tools can be executed in three different XX
+
+#### Command line interface
+```ssgsea-cli.R``` can be executed from the command line, please see ```ssgsea-cli.R --help``` for instructions. 
+
+#### R
+
+
+The R-scripts ```ssgsea-gui.R``` and ```ssgsea-cli.R``` provide wrapper to the ssGSEA/PTM-SEA R-program which performs the actual enrichment analysis. 
+
+
+
+#### ```ssgsea-gui.R``` 
+- is aimed towards users with little or no knowledge of Linux command line.
+
 
 ### Instructions to run ```ssgsea-gui.R```
 
@@ -14,9 +52,9 @@ Input files and databases can be specified via Windows file dialogs that will be
 ##### **iOS/MAC** 
 In order to invoke file dialogs as decribed above, the [XQuartz](https://www.xquartz.org) X Window System is required. Once installed ```ssgsea-gui.R``` can be sourced into an R session.   
 
-##### **ssGSEA parameters**
+##### **ssGSEA/PTM-SEA parameters**
 
-Other paramaters for ssGSEA can be altered inside the parameters section in ```ssgsea-gui.R```. The default parameters have been choosen carefully and should provide reliable results for most use-case scenerios. 
+Other paramaters for ssGSEA/PTM-SEA can be altered inside the parameters section in ```ssgsea-gui.R```. The default parameters have been choosen carefully and should provide reliable results for most use-case scenerios. 
 
 ### Gene Set Enrichment Analysis (GSEA)
 For information about the method please visit http://software.broadinstitute.org/gsea/.
@@ -27,7 +65,7 @@ Original code written by Pablo Tamayo. Adapted with additional modifications by 
 - support of multiple CPU cores (```doParallel``` R-package)
 - support of GCT v1.3 format using functions from [cmapR](https://github.com/cmap/cmapR)
 - improved handling of missing values
-- scoring of directional gene sets
+- scoring of directional gene sets (PTMsigDB)
 - basic error handling
 - general performance improvements
 - additional output files like rank plots and parameter files
