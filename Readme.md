@@ -1,13 +1,4 @@
----
-title: "ssGSEA2.0 / PTM-SEA"
-output:
-  html_document:
-    toc: true
-    toc_depth: 3
-    number_sections: false
-    toc_float:
-      smooth_scroll: true
----
+ssGSEA2.0/PTM-SEA
 
 ***
 
@@ -32,7 +23,7 @@ To ensure a high degree of compatibility to phosphorylation datasets generated b
 | Flanking sequence | +/-7aa flanking seq-type;direction | ETRICKIYDSPCLPE-p;u | [human](https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptm.sig.db.all.flanking.human.v1.8.1.gmt)<br>[mouse](https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptm.sig.db.all.flanking.mouse.v1.8.1.gmt)<br>[rat](https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptm.sig.db.all.flanking.rat.v1.8.1.gmt)
 | PSP site group id | site_grp_id-type;direction | 448324-p;u | [human](https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptm.sig.db.all.sitegrpid.human.v1.8.1.gmt)<br>[mouse](https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptm.sig.db.all.sitegrpid.mouse.v1.8.1.gmt)<br>[rat](https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptm.sig.db.all.sitegrpid.rat.v1.8.1.gmt)
 
-Table: Table 1: PTM site representation in PTMsigDB
+Table: 1 PTM site representation in PTMsigDB
 
 
 ## PTM-SEA
@@ -45,7 +36,7 @@ ssGSEA2.0/PTM-SEA can be run on a local PC/MAC in R or RStudio. In addition, ssG
 
 ### Example dataset
 
-We provide an example data set that can be used to test PTM-SEA. The dataset is based on Supplemental Table 6 in [1]..
+We provide an example data set that can be used to test PTM-SEA. The dataset is based on Supplemental Table 6 in [1].
 
 [Single site-centric phosphoproteome dataset](https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/example/PI3K_pert_logP_n2x23936.gct)
 
@@ -58,7 +49,7 @@ We provide an example data set that can be used to test PTM-SEA. The dataset is 
 PTM-SEA in GenePattern: https://tinyurl.com/GP-ssGSEA-PTM-SEA
 
 ### R-GUI / RStudio
-The script ```ssgsea-gui.R``` requires little or no knowledge of R or how to use the command line. Input files and databases can be specified via Windows file dialogs that will be automatically invoked. The first dialog lets you choose a folder containing input files in [GCT v1.2](https://software.broadinstitute.org/cancer/software/gsea/wiki/index.php/Data_formats#GCT:_Gene_Cluster_Text_file_format_.28.2A.gct.29) or [GCT v1.3](https://clue.io/connectopedia/gct_format) format. The script loops over all GCT files in this directory and runs ssGSEA on each file separately. The second dialog window lets the user choose one or multiple gene set databases in [GMT](https://software.broadinstitute.org/cancer/software/gsea/wiki/index.php/Data_formats#GMT:_Gene_Matrix_Transposed_file_format_.28.2A.gmt.29) format such as [MSigDB](http://software.broadinstitute.org/gsea/msigdb/). A current version of MSigDB databases can be found in the ```db``` subfolder. 
+The script ```ssgsea-gui.R``` requires little or no knowledge of R or on how to use the command line. Input files and databases can be specified via Windows file dialogs that will be automatically invoked. The first dialog lets you choose a folder containing input files in [GCT v1.2](https://software.broadinstitute.org/cancer/software/gsea/wiki/index.php/Data_formats#GCT:_Gene_Cluster_Text_file_format_.28.2A.gct.29) or [GCT v1.3](https://clue.io/connectopedia/gct_format) format. The script loops over all GCT files in this directory and runs ssGSEA on each file separately. The second dialog window lets the user choose one or multiple gene set databases in [GMT](https://software.broadinstitute.org/cancer/software/gsea/wiki/index.php/Data_formats#GMT:_Gene_Matrix_Transposed_file_format_.28.2A.gmt.29) format such as [MSigDB](http://software.broadinstitute.org/gsea/msigdb/). A current version of MSigDB databases can be found in the ```db``` subfolder. 
 
 
 ##### **Windows OS**
@@ -96,25 +87,25 @@ Original code written by Pablo Tamayo. Adapted with additional modifications by 
 
 
 ## References
-1.  Krug, K., Mertins, P., Zhang, B., Hornbeck, P., Raju, R., Ahmad, R., . Szucs, M., Mundt, F., Forestier, D., Jane-Valbuena, J., Keshishian, H., Gillette, M. A., Tamayo, P., Mesirov, J. P., Jaffe, J. D., Carr, S. A., Mani, D. R. A curated resource for phosphosite-specific signature analysis, submitted
+1.  Krug, K., Mertins, P., Zhang, B., Hornbeck, P., Raju, R., Ahmad, R., . Szucs, M., Mundt, F., Forestier, D., Jane-Valbuena, J., Keshishian, H., Gillette, M. A., Tamayo, P., Mesirov, J. P., Jaffe, J. D., Carr, S. A., Mani, D. R. **A curated resource for phosphosite-specific signature analysis**, submitted
 
-1.  Barbie, D. A., Tamayo, P., Boehm, J. S., Kim, S. Y., Susan, E., Dunn, I. F., . Hahn, W. C. (2010). Systematic RNA interference reveals that oncogenic KRAS- driven cancers require TBK1, 462(7269), 108-112. https://doi.org/10.1038/nature08460
+1.  Barbie, D. A., Tamayo, P., Boehm, J. S., Kim, S. Y., Susan, E., Dunn, I. F., . Hahn, W. C. (2010). **Systematic RNA interference reveals that oncogenic KRAS- driven cancers require TBK1**, 462(7269), 108-112. https://doi.org/10.1038/nature08460
 
 1. Abazeed, M. E., Adams, D. J., Hurov, K. E., Tamayo, P., Creighton, C. J., Sonkin, D., et al. (2013).
-       Integrative Radiogenomic Profiling of Squamous Cell Lung Cancer. Cancer Research, 73(20), 6289-6298.
+       **Integrative Radiogenomic Profiling of Squamous Cell Lung Cancer.** Cancer Research, 73(20), 6289-6298.
        http://doi.org/10.1158/0008-5472.CAN-13-1616
 
 1. Subramanian, A., Tamayo, P., Mootha, V. K., Mukherjee, S., Ebert, B. L., Gillette, M. A., et al. (2005).
-   Gene set enrichment analysis: a knowledge-based approach for interpreting genome-wide expression profiles.
+   **Gene set enrichment analysis: a knowledge-based approach for interpreting genome-wide expression profiles.**
   Proceedings of the National Academy of Sciences of the United States of America, 102(43), 15545-15550. http://doi.org/10.1073/pnas.0506580102
 
-1. Hornbeck, P. V., Zhang, B., Murray, B., Kornhauser, J. M., Latham, V., & Skrzypek, E. (2015). PhosphoSitePlus, 2014: mutations, PTMs and recalibrations. Nucleic Acids Research, 43(D1), D512-D520. https://doi.org/10.1093/nar/gku1267
+1. Hornbeck, P. V., Zhang, B., Murray, B., Kornhauser, J. M., Latham, V., & Skrzypek, E. (2015). **PhosphoSitePlus, 2014: mutations, PTMs and recalibrations.** Nucleic Acids Research, 43(D1), D512-D520. https://doi.org/10.1093/nar/gku1267
  
 
-1. Cox, J., & Mann, M. (2008). MaxQuant enables high peptide identification rates, individualized p.p.b.-range mass accuracies and proteome-wide protein quantification. Nature Biotechnology, 26(12), 1367-1372. https://doi.org/10.1038/nbt.1511
+1. Cox, J., & Mann, M. (2008). **MaxQuant enables high peptide identification rates, individualized p.p.b.-range mass accuracies and proteome-wide protein quantification.** Nature Biotechnology, 26(12), 1367-1372. https://doi.org/10.1038/nbt.1511
 
 
-1. Reich, M., Liefeld, T., Gould, J., Lerner, J., Tamayo, P., & Mesirov, J. P. (2006). GenePattern 2.0. Nature Genetics, 38(5), 500-501. https://doi.org/10.1038/ng0506-500
+1. Reich, M., Liefeld, T., Gould, J., Lerner, J., Tamayo, P., & Mesirov, J. P. (2006). **GenePattern 2.0.** Nature Genetics, 38(5), 500-501. https://doi.org/10.1038/ng0506-500
 
       
 
