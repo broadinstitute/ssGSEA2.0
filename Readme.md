@@ -1,8 +1,7 @@
 # ssGSEA2.0/PTM-SEA
 
-***
 
-Resources for gene-centric **single sample Gene Set Enrichment Analysis (ssGSEA)** of gene expression data (e.g. mRNAs, proteins) and site-centric **PTM Signature Enrichment Analysis (PTM-SEA)**[1] of phosphoproteomics data sets using the **PTM signatures database (PTMsigDB)** [1].
+Resources for gene-centric **single sample Gene Set Enrichment Analysis (ssGSEA)** of gene expression data (e.g. mRNAs, proteins) and site-centric **PTM Signature Enrichment Analysis (PTM-SEA)** [1] of phosphoproteomics data sets using the **PTM signatures database (PTMsigDB)** [1].
 
 ## ssGSEA 2.0
 This is an updated version of the original ssGSEA [2,3] R-implementation. Depending on the input dataset and chosen database (gene sets or PTM signatures), the software performs either ssGSEA or PTM-SEA, respectively. The Molecular Signatures Database ([MSigDB](http://software.broadinstitute.org/gsea/msigdb/)) [4] provides a large collection of curated gene sets.  Gene sets are stored as plain text in  [GMT](https://software.broadinstitute.org/cancer/software/gsea/wiki/index.php/Data_formats#GMT:_Gene_Matrix_Transposed_file_format_.28.2A.gmt.29) format. A current version of MSigDB gen set collections can be found in the ```db``` subfolder.
