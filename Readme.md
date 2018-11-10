@@ -22,7 +22,7 @@ To ensure a high degree of compatibility to phosphorylation datasets generated b
 | Flanking sequence | +/-7aa flanking seq-type;direction | ETRICKIYDSPCLPE-p;u | [human](https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptm.sig.db.all.flanking.human.v1.8.1.gmt)<br>[mouse](https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptm.sig.db.all.flanking.mouse.v1.8.1.gmt)<br>[rat](https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptm.sig.db.all.flanking.rat.v1.8.1.gmt)
 | PSP site group id | site_grp_id-type;direction | 448324-p;u | [human](https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptm.sig.db.all.sitegrpid.human.v1.8.1.gmt)<br>[mouse](https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptm.sig.db.all.sitegrpid.mouse.v1.8.1.gmt)<br>[rat](https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptm.sig.db.all.sitegrpid.rat.v1.8.1.gmt)
 
-Table: 1 PTM site representation in PTMsigDB
+Table 1: PTM site representation in PTMsigDB
 
 
 ## PTM-SEA
