@@ -95,7 +95,6 @@ Original code written by Pablo Tamayo. Adapted with additional modifications by 
 - additional output files like rank plots and parameter files
 
 
-
 ## References
 1.  Krug, K., Mertins, P., Zhang, B., Hornbeck, P., Raju, R., Ahmad, R., . Szucs, M., Mundt, F., Forestier, D., Jane-Valbuena, J., Keshishian, H., Gillette, M. A., Tamayo, P., Mesirov, J. P., Jaffe, J. D., Carr, S. A., Mani, D. R. A curated resource for phosphosite-specific signature analysis, submitted
 
