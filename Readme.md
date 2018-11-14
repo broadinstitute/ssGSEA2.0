@@ -35,7 +35,7 @@ ssGSEA2.0/PTM-SEA can be run on a local PC/MAC in R or RStudio. In addition, ssG
 
 ### Example dataset
 
-We provide an example data set that can be used to test PTM-SEA. The dataset is based on Supplemental Table 6 in [1].
+We provide an example dataset that can be used to test PTM-SEA. The dataset is based on Supplemental Table 6 in [1].
 
 [Single site-centric phosphoproteome dataset](https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/example/PI3K_pert_logP_n2x23936.gct)
 
@@ -43,7 +43,7 @@ We provide an example data set that can be used to test PTM-SEA. The dataset is 
 
 
 ### GenePattern
-[GenePattern](http://software.broadinstitute.org/cancer/software/genepattern) is a powerful platform to deploy and run software or entire analysis pipelines in a web browser [4]. We have implemented ssGSEA2.0/PTM-SEA as GenePattern module which can be accessed at the link below. Please note that access to the public GenePattern server requires a free registration.
+[GenePattern](http://software.broadinstitute.org/cancer/software/genepattern) is a powerful platform to deploy and run software or entire analysis pipelines in a web browser [7]. We have implemented ssGSEA2.0/PTM-SEA as GenePattern module which can be accessed at the link below. Please note that access to the public GenePattern server requires a free registration.
 
 PTM-SEA in GenePattern: https://tinyurl.com/GP-ssGSEA-PTM-SEA
 
