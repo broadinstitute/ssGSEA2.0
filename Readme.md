@@ -45,7 +45,7 @@ We provide an example dataset that can be used to test PTM-SEA. The dataset is b
 ### GenePattern
 [GenePattern](http://software.broadinstitute.org/cancer/software/genepattern) is a powerful platform to deploy and run software or entire analysis pipelines in a web browser [7]. We have implemented ssGSEA2.0/PTM-SEA as GenePattern module which can be accessed at the link below. Please note that access to the public GenePattern server requires a free registration.
 
-PTM-SEA in GenePattern: https://tinyurl.com/GP-ssGSEA-PTM-SEA
+PTM-SEA in GenePattern: https://tinyurl.com/PTM-SEA-GP
 
 ### R-GUI / RStudio
 The script ```ssgsea-gui.R``` requires little or no knowledge of R or on how to use the command line. Input files and databases can be specified via Windows file dialogs that will be automatically invoked. The first dialog lets you choose a folder containing input files in [GCT v1.2](https://software.broadinstitute.org/cancer/software/gsea/wiki/index.php/Data_formats#GCT:_Gene_Cluster_Text_file_format_.28.2A.gct.29) or [GCT v1.3](https://clue.io/connectopedia/gct_format) format. The script loops over all GCT files in this directory and runs ssGSEA on each file separately. The second dialog window lets the user choose one or multiple gene set databases in [GMT](https://software.broadinstitute.org/cancer/software/gsea/wiki/index.php/Data_formats#GMT:_Gene_Matrix_Transposed_file_format_.28.2A.gmt.29) format such as [MSigDB](http://software.broadinstitute.org/gsea/msigdb/). A current version of MSigDB databases can be found in the ```db``` subfolder. 
