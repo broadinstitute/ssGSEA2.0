@@ -29,13 +29,13 @@ if (!require("pacman")) install.packages ("pacman")
 ##  define parameters below:
 ## ##########################################################
 
-## sGSEA / PSEA parameters
+## ssGSEA / PTM-SEA parameters
 sample.norm.type    = "rank"              ## "rank", "log", "log.rank", "none" 
 weight              = 0.75                ## value between 0 (no weighting) and 1 (actual data counts)
 statistic           = "area.under.RES"    ## "Kolmogorov-Smirnov"
 output.score.type   = "NES"               ## 'ES' or 'NES'
-nperm               = 1e3                 ## No. of permutations
-min.overlap         = 10                  ## minimal overlap between gene set and data
+nperm               = 1e3                ## No. of permutations
+min.overlap         = 5                  ## minimal overlap between gene set and data
 correl.type         = "z.score"           ## 'rank', 'z.score', 'symm.rank'
 par                 = T                   ## use 'doParallel' package?
 spare.cores         = 1                   ## No. of cores to leave idle
@@ -73,7 +73,7 @@ db.ok=F
 while(!db.ok){
   
   if(os == 'Windows')
-    gene.set.databases = choose.files(default = paste( script.dir, 'db/c2.cp.v6.1.symbols.gmt', sep='/' ), caption='Choose gene set database in gmt format. See Broad\'s MSigDB website for details.')
+    gene.set.databases = choose.files(default = paste( script.dir, 'db/msigdb/c2.cp.v6.2.symbols.gmt', sep='/' ), caption='Choose gene set database in gmt format. See Broad\'s MSigDB website for details.')
   else
     gene.set.databases = file.choose()
   
@@ -123,7 +123,6 @@ writeLines(param.str, con='parameters.txt')
 
 ## identify all gct files
 gct.files <- dir(gct.dir, pattern='\\.gct$', full.names=T)
-##names(gct.files) <- sub('_gene_centric.*','', sub('\\.gct$', '', sub('.*/','', gct.files)))
 names(gct.files) <- paste(  sub('\\.gct$', '', sub('.*/','', gct.files)), 'ssGSEA', sep='_' )
 
 #debug(ssGSEA2)
@@ -158,7 +157,7 @@ for(i in names(gct.files)){
     ## #########################################################
     ##              rank plots
     ## #########################################################
-    ## flag to indicate presence of duplictaed ids in GCT file
+    ## flag to indicate presence of duplicated ids in GCT file
     ## e.g. in case of gene-centric-redundant signature analysis
     dups=F
     if(file.exists( sub('\\.gct', '_unique.gct', input.ds)))
