@@ -199,7 +199,7 @@ for(i in names(gct.files)){
 
         gs.name <- all.gs[gs]
 
-        pdf(paste('rank-plots/', chopString( gsub('\\:|\\/\\\t', ' ', gs.name), nChar=20, add.dots=F) ,'_2.pdf', sep=''), 9.5, 9.5)
+        pdf(paste('rank-plots/', make.names( chopString( gsub('\\:|\\/\\\t', ' ', gs.name), nChar=20, add.dots=F)) ,'_2.pdf', sep=''), 9.5, 9.5)
         par(mfrow=c(3, 3))
         for(samp in 1:length(all.samp)){
 
