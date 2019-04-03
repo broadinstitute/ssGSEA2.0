@@ -164,7 +164,11 @@ ssGSEA2 <- function (
             sample.names <- dataset@cid
             sample.descs <- dataset@cdesc
           }
-        } #end if 'rid not unique'
+        } else { #end if 'rid not unique'
+            stop("\n\nError importing GCT file using 'cmapR::parse.gctx()'. The GCT file doesn't seem to be in the correct format!
+Please see take a look at https://clue.io/connectopedia/gct_format for details about GCT format.
+\nError message thrown by 'cmapR::parse.gctx()':\n\n")
+          } 
     } #end if try-error
     m.org <- m
     gct.version <- dataset@version
