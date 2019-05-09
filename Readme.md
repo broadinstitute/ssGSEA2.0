@@ -3,7 +3,7 @@
 Resources for gene-centric **single sample Gene Set Enrichment Analysis (ssGSEA)** of gene expression data (e.g. mRNAs, proteins) and site-centric **PTM Signature Enrichment Analysis (PTM-SEA)** [1] of phosphoproteomics data sets using the [**PTM signatures database (PTMsigDB)**](http://prot-shiny-vm.broadinstitute.org:3838/ptmsigdb-app/) [1].
 
 ## ssGSEA 2.0
-This is an updated version of the original ssGSEA [2,3] R-implementation. Depending on the input dataset and chosen database (gene sets or PTM signatures), the software performs either ssGSEA or PTM-SEA, respectively. The Molecular Signatures Database ([MSigDB](http://software.broadinstitute.org/gsea/msigdb/)) [4] provides a large collection of curated gene sets.  Gene sets are stored as plain text in  [GMT](https://software.broadinstitute.org/cancer/software/gsea/wiki/index.php/Data_formats#GMT:_Gene_Matrix_Transposed_file_format_.28.2A.gmt.29) format. A current version of MSigDB gen set collections can be found in the ```db``` subfolder.
+This is an updated version of the original ssGSEA [2,3] R-implementation. Depending on the input dataset and chosen database (gene sets or PTM signatures), the software performs either ssGSEA or PTM-SEA, respectively. The Molecular Signatures Database ([MSigDB](http://software.broadinstitute.org/gsea/msigdb/)) [4] provides a large collection of curated gene sets.  Gene sets are stored as plain text in  [GMT](https://software.broadinstitute.org/cancer/software/gsea/wiki/index.php/Data_formats#GMT:_Gene_Matrix_Transposed_file_format_.28.2A.gmt.29) format. A current version of MSigDB gene set collections can be found in the ```db/msigdb``` subfolder. MSigDB gene sets are realeased under [Creative Commons Attribution 4.0 International License](http://software.broadinstitute.org/gsea/msigdb_license_terms.jsp). The license terms can be found in the```db/msigdb``` folder.
 
 File formats supported by ssGSEA2.0/PTM-SEA are Gene Cluster Text [GCT v1.2](https://software.broadinstitute.org/cancer/software/gsea/wiki/index.php/Data_formats#GCT:_Gene_Cluster_Text_file_format_.28.2A.gct.29) or [GCT v1.3](https://clue.io/connectopedia/gct_format) files. [Morpheus](https://software.broadinstitute.org/morpheus/) provides a convenient way to convert your data tables into GCT format.
 
@@ -84,8 +84,11 @@ Original code written by Pablo Tamayo. Adapted with additional modifications by 
 - improved handling of missing values
 - scoring of directional gene sets (PTMsigDB)
 - basic error handling
-- general performance improvements
+- improvements in runtime performance
 - additional output files like rank plots and parameter files
+
+## License
+License Agreement for MSigDB v6.0 and above can be found [here](https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/msigdb/license.txt).
 
 ## References
 1.  Krug, K., Mertins, P., Zhang, B., Hornbeck, P., Raju, R., Ahmad, R., . Szucs, M., Mundt, F., Forestier, D., Jane-Valbuena, J., Keshishian, H., Gillette, M. A., Tamayo, P., Mesirov, J. P., Jaffe, J. D., Carr, S. A., Mani, D. R. (2019). **A curated resource for phosphosite-specific signature analysis**, Molecular & Cellular Proteomics (in Press). http://doi.org/10.1074/mcp.TIR118.000943
@@ -108,6 +111,5 @@ Original code written by Pablo Tamayo. Adapted with additional modifications by 
 
 1. Reich, M., Liefeld, T., Gould, J., Lerner, J., Tamayo, P., & Mesirov, J. P. (2006). **GenePattern 2.0.** Nature Genetics, 38(5), 500-501. https://doi.org/10.1038/ng0506-500
 
-      
 
 ***

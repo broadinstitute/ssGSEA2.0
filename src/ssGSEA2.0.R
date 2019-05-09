@@ -14,9 +14,11 @@ if(!suppressPackageStartupMessages(require(rhdf5))){
   source("https://bioconductor.org/biocLite.R")
   biocLite("rhdf5")
 }
-if(!suppressPackageStartupMessages(require(cmapR)))
-  devtools::install_github("cmap/cmapR")
-
+if(!suppressPackageStartupMessages(require(cmapR))){
+   if(!suppressPackageStartupMessages(require(devtools)))
+     install.packages('devtools')
+   devtools::install_github("cmap/cmapR")
+}
 p_load(gtools)
 p_load(verification)
 p_load(doParallel)
