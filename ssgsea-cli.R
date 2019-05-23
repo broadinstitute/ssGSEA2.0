@@ -20,7 +20,7 @@ option_list <- list(
   make_option( c("-t", "--test"), action='store', type='character',  dest='statistic', help='Test statistic: "area.under.RES", "Kolmogorov-Smirnov"', default = 'area.under.RES'),
   make_option( c("-s", "--score"), action='store', type='character',  dest='output.score.type', help='Score type: "ES" - enrichment score,  "NES" - normalized ES', default = 'NES'),
   make_option( c("-p", "--perm"), action='store', type='numeric',  dest='nperm', help='Number of permutations', default = 1000),
-  make_option( c("-m", "--minoverlap"), action='store', type='numeric',  dest='min.overlap', help='Minimal overlap ebtween signature and data set.', default = 10),
+  make_option( c("-m", "--minoverlap"), action='store', type='numeric',  dest='min.overlap', help='Minimal overlap between signature and data set.', default = 10),
   make_option( c("-x", "--extendedoutput"), action='store', type='logical',  dest='extended.output', help='It TRUE additional stats on signature coverage etc. will be included as row annotations in the GCT results files.', default = TRUE),
   make_option( c("-e", "--export"), action='store', type='logical',  dest='export.signat.gct', help='For each signature export expression GCT files.', default = TRUE),
   make_option( c("-g", "--globalfdr"), action='store', type='logical',  dest='global.fdr', help='If TRUE global FDR across all data columns is calculated.', default = FALSE),
