@@ -11,8 +11,15 @@ if(!suppressPackageStartupMessages(require("pacman"))){
   install.packages("pacman")
 }
 if(!suppressPackageStartupMessages(require(rhdf5))){
-  source("https://bioconductor.org/biocLite.R")
-  biocLite("rhdf5")
+  
+  RVERSION <- as.numeric(paste(R.version$major, sub('\\..*','',R.version$minor), sep='.')) 
+  if(RVERSION >= 3.6) {
+    p_load(BiocManager)
+    BiocManager::install("rhdf5")
+  } else {
+    source("https://bioconductor.org/biocLite.R")
+    biocLite("rhdf5")
+  }
 }
 if(!suppressPackageStartupMessages(require(cmapR))){
    if(!suppressPackageStartupMessages(require(devtools)))
