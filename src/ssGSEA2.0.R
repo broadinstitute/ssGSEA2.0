@@ -29,6 +29,8 @@ if(!suppressPackageStartupMessages(require(cmapR))){
 p_load(gtools)
 p_load(verification)
 p_load(doParallel)
+#p_load(doSNOW)
+#p_load(Rmpi)
 p_load(foreach)
 p_load(magrittr)
 
@@ -768,7 +770,7 @@ Please see take a look at https://clue.io/connectopedia/gct_format for details a
     ##
     if(par){
         ## register cores
-        cl <- makeCluster(detectCores() - spare.cores)
+        cl <- parallel::makeCluster(detectCores() - spare.cores)
         registerDoParallel(cl)
 
         ######################
@@ -1093,14 +1095,15 @@ Please see take a look at https://clue.io/connectopedia/gct_format for details a
         
         gct.tmp@src <- gct.src
     
+        #####################################
         ## check length of filepath
         ## Windows OS supports maximum of 259 characters in a file path 
-        fn <- paste(getwd(),'/signature_gct/', sig.name, sep='')
+        fn <- paste(getwd(),'/signature_gct/', make.names(sig.name), sep='')
         if((nchar(fn)+15) > max.nchar.file.path){
           fn <- paste( unlist(strsplit(fn,''))[1:(max.nchar.file.path-15)], collapse='')
           cat(nchar(fn), ' ', fn ,'\n')
         }
-        write.gct(gct.tmp, ofile=sub('.*/', 'signature_gct/',fn), appenddim = T)
+        write.gct(gct.tmp, ofile=sub('.*/', 'signature_gct/', fn), appenddim = T)
         
       }
     }
