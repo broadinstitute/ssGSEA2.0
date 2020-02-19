@@ -5,8 +5,8 @@ suppressPackageStartupMessages( if(!require("pacman")) install.packages ("pacman
 suppressPackageStartupMessages(p_load("optparse"))
 
 # parse the directory this file is located
-this.file.dir <- commandArgs()[4]
-this.file.dir <- sub('^(.*(/|\\\\)).*', '\\1', sub('.*?\\=','', this.file.dir))
+script.dir <- commandArgs()[4]
+script.dir <- sub('^(.*(/|\\\\)).*', '\\1', sub('.*?\\=','', script.dir))
 
 
 # specify command line arguments
@@ -36,7 +36,7 @@ log.file <- paste(opt$output.prefix, '_ssgsea.log.txt', sep='')
 
 ## #####################################
 ## source the actual script
-source(paste(this.file.dir, 'src/ssGSEA2.0.R', sep=''))
+source(paste(script.dir, 'src/ssGSEA2.0.R', sep=''))
 
 ## ######################################################################################################
 ##

@@ -10,27 +10,28 @@
 if(!suppressPackageStartupMessages(require("pacman"))){
   install.packages("pacman")
 }
-if(!suppressPackageStartupMessages(require(rhdf5))){
-  
-  RVERSION <- as.numeric(paste(R.version$major, sub('\\..*','',R.version$minor), sep='.')) 
-  if(RVERSION >= 3.6) {
-    p_load(BiocManager)
-    BiocManager::install("rhdf5")
-  } else {
-    source("https://bioconductor.org/biocLite.R")
-    biocLite("rhdf5")
-  }
-}
-if(!suppressPackageStartupMessages(require(cmapR))){
-   if(!suppressPackageStartupMessages(require(devtools)))
-     install.packages('devtools')
-   devtools::install_github("cmap/cmapR")
-}
+#if(!suppressPackageStartupMessages(require(rhdf5))){
+#  
+#  RVERSION <- as.numeric(paste(R.version$major, sub('\\..*','',R.version$minor), sep='.')) 
+#  if(RVERSION >= 3.6) {
+#    p_load(BiocManager)
+#    BiocManager::install("rhdf5")
+#  } else {
+#    source("https://bioconductor.org/biocLite.R")
+#    biocLite("rhdf5")
+#  }
+#}
+#if(!suppressPackageStartupMessages(require(cmapR))){
+#   if(!suppressPackageStartupMessages(require(devtools)))
+#     install.packages('devtools')
+#   devtools::install_github("cmap/cmapR")
+#}
+## 'script.dir' needs to be defined before sourcing this file
+source(file.path(script.dir, 'src', 'io.R'))
+
 p_load(gtools)
 p_load(verification)
 p_load(doParallel)
-#p_load(doSNOW)
-#p_load(Rmpi)
 p_load(foreach)
 p_load(magrittr)
 
@@ -135,6 +136,7 @@ ssGSEA2 <- function (
       sample.descs <- dataset@cdesc
       
     } else {
+      
         ## - cmapR functions stop if ids are not unique
         ## - import gct using readLines and make ids unique
         if(length(grep('rid must be unique', dataset) ) > 0) {
@@ -175,10 +177,14 @@ ssGSEA2 <- function (
             sample.names <- dataset@cid
             sample.descs <- dataset@cdesc
           }
+          
         } else { #end if 'rid not unique'
-            stop("\n\nError importing GCT file using 'cmapR::parse.gctx()'. The GCT file doesn't seem to be in the correct format!
-Please see take a look at https://clue.io/connectopedia/gct_format for details about GCT format.
-\nError message thrown by 'cmapR::parse.gctx()':\n\n")
+          
+          ########################################################
+          ## display a more detailed error message if the import 
+          ## failed due to other reasons than redundant 'rid'
+            stop("\n\nError importing GCT file using 'cmapR::parse.gctx()'. Possible reasons:\n\n1) Please check whether you have the latest version of the 'cmapR' installed. Due to submission to Bioconductor the cmap team changed some naming conventions, e.g 'parse.gctx()' has been renamed to 'parse.gctx()'.\n2) The GCT file doesn't seem to be in the correct format! Please see take a look at https://clue.io/connectopedia/gct_format for details about GCT format.
+\nError message returned by 'cmapR::parse.gctx()':\n\n", dataset, '\n\n')
           } 
     } #end if try-error
     m.org <- m
@@ -425,10 +431,6 @@ Please see take a look at https://clue.io/connectopedia/gct_format for details a
                   ########################################
                   ## up-regulated part
                   ########################################
-                  
-                    #if(length(u.idx) > 1){
-                    #if(length(u.idx) > 0){ ## 20180327
-                    #if(length(u.idx) > 1 & length(d.idx) > 1 ){ ## 20180408
                   if(Nh.u > 1){
                         ## locations of 'up' features
                         tag.u <- sign( match(ordered.gene.list, gene.set2[ u.idx ], nomatch=0) )
@@ -470,13 +472,6 @@ Please see take a look at https://clue.io/connectopedia/gct_format for details a
                     ## ######################################
                     ## down-regulated part
                     ## ######################################
-                    #d.idx <- which(gene.set.direction=='d')
-                    #Nh.d <- length(d.idx)
-                    #Nm.d <-  N - Nh.d
-
-                    #if(length(d.idx) > 1){
-                    #if(length(d.idx) > 1){ ## 20180327
-                    #if(length(d.idx) > 1 & length(u.idx) > 1 ){ ## 20180408
                     if(Nh.d > 1){  
                         ## locations of 'd' features
                         tag.d <- sign( match(ordered.gene.list, gene.set2[ d.idx ], nomatch=0) )
@@ -771,11 +766,11 @@ Please see take a look at https://clue.io/connectopedia/gct_format for details a
     if(par){
         ## register cores
         cl <- parallel::makeCluster(detectCores() - spare.cores)
-        registerDoParallel(cl)
+        doParallel::registerDoParallel(cl)
 
         ######################
         ## parallel loop
-        tmp <-  foreach(gs.i = 1:N.gs) %dopar% {
+        tmp <-  foreach(gs.i = 1:N.gs,  .packages='doParallel') %dopar% {
 
             ##cat( (gs.i / N.gs)*100, '%\n')
             cat(names(gs)[gs.i],  '\n' , file=log.file, append=T)
@@ -1127,10 +1122,9 @@ Please see take a look at https://clue.io/connectopedia/gct_format for details a
       V.GCT@cdesc <- cdesc.final
     }
     V.GCT@src <- gct.src
-    
-    #V.GCT@version <- gct.version
-    #browser()
-    write.gct(V.GCT, paste (output.prefix, '-scores.gct', sep=''), appenddim = F)
+    fn <- paste (output.prefix, '-scores.gct', sep='')
+    #V.GCT@fname <- fn
+    write.gct(V.GCT, ofile = fn, appenddim = F)
 
     #################################################
     ## p-value matrix
@@ -1141,11 +1135,10 @@ Please see take a look at https://clue.io/connectopedia/gct_format for details a
     P.GCT@rdesc <- gs.descs.2
     if(nrow(sample.descs) > 0)
       P.GCT@cdesc <- cdesc.final
-      #P.GCT@cdesc <- data.frame(sample.descs, stringsAsFactors = F)
     P.GCT@src <- gct.src
-    #P.GCT@version <- gct.version
-    #write.gct(P.GCT, paste (output.prefix, '-pvalues' ,'_', paste(dim(P.GCT@mat), collapse ='x'),'.gct', sep=''), appenddim = F)
-    write.gct(P.GCT, paste (output.prefix, '-pvalues.gct', sep=''), appenddim = F)
+    fn <- paste (output.prefix, '-pvalues.gct', sep='')
+    #P.GCT@fname <- fn
+    write.gct(P.GCT, ofile = fn, appenddim = F)
     
     ## ##############################################  
     ## FDR matrix
@@ -1156,12 +1149,11 @@ Please see take a look at https://clue.io/connectopedia/gct_format for details a
     F.GCT@rdesc <- gs.descs.2
     if(nrow(sample.descs) > 0)
       F.GCT@cdesc <- cdesc.final
-      #F.GCT@cdesc <- data.frame(sample.descs, stringsAsFactors = F)
     F.GCT@src <- gct.src
-    #F.GCT@version <- gct.version
-    #write.gct(F.GCT, paste (output.prefix, '-fdr-pvalues' ,'_', paste(dim(F.GCT@mat), collapse ='x'),'.gct', sep=''), appenddim = F)
-    write.gct(F.GCT, paste (output.prefix, '-fdr-pvalues.gct', sep=''), appenddim = F)
-    
+    fn <- paste (output.prefix, '-fdr-pvalues.gct', sep='')
+    #F.GCT@fname <- fn
+    write.gct(F.GCT, ofile = fn, appenddim = F)
+  
     ## ######################################################################
     ## generate a single CGT containing scores as data matrix and
     ## p-values, fdr-p-values as row annotation matrices
@@ -1181,14 +1173,13 @@ Please see take a look at https://clue.io/connectopedia/gct_format for details a
     ALL.GCT@rdesc <- gs.descs.2
     if(nrow(sample.descs) > 0)
       ALL.GCT@cdesc <- cdesc.final
-      #ALL.GCT@cdesc <- data.frame(sample.descs, stringsAsFactors = F)
     ALL.GCT@src <- gct.src
     ALL.GCT@version <- gct.version
-    write.gct(ALL.GCT, paste (output.prefix, '-combined.gct', sep=''), appenddim = F)
     
- 
-    
-    
+    fn <- paste (output.prefix, '-combined.gct', sep='')
+    #ALL.GCT@fname <- fn
+    write.gct(ALL.GCT, ofile = fn, appenddim = F)
+
     return(random.walk)
 }
 

@@ -73,7 +73,7 @@ db.ok=F
 while(!db.ok){
   
   if(os == 'Windows')
-    gene.set.databases = choose.files(default = paste( script.dir, 'db/msigdb/c2.cp.v6.2.symbols.gmt', sep='/' ), caption='Choose gene set database in gmt format. See Broad\'s MSigDB website for details.')
+    gene.set.databases = choose.files(default = paste( script.dir, 'db/msigdb/c2.cp.v7.0.symbols.gmt', sep='/' ), caption='Choose gene set database in gmt format. See Broad\'s MSigDB website for details.')
   else
     gene.set.databases = file.choose()
   
@@ -85,7 +85,8 @@ while(!db.ok){
 ## ######################################################################
 ##                          START
 ## ######################################################################
-source(paste(script.dir, 'src/ssGSEA2.0.R', sep='/'))
+#source(paste(script.dir, 'src/ssGSEA2.0.R', sep='/'))
+source(file.path(script.dir, 'src/ssGSEA2.0.R'))
 
 ## #############################################
 ## prepare output folder
