@@ -16,7 +16,7 @@ This is an updated version of the original ssGSEA [2,3] R-implementation. Depend
 
 File formats supported by ssGSEA2.0/PTM-SEA are Gene Cluster Text [GCT v1.2](https://software.broadinstitute.org/cancer/software/gsea/wiki/index.php/Data_formats#GCT:_Gene_Cluster_Text_file_format_.28.2A.gct.29) or [GCT v1.3](https://clue.io/connectopedia/gct_format) files. [Morpheus](https://software.broadinstitute.org/morpheus/) provides a convenient way to convert your data tables into GCT format.
 
-For information about the GSEA method and MSigDB please visit http://software.broadinstitute.org/gsea/.
+For more information about the GSEA method and MSigDB please visit http://software.broadinstitute.org/gsea/.
 
 
 ## PTMsigDB v1.9.0
