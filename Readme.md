@@ -7,7 +7,7 @@ Resources for gene-centric **single sample Gene Set Enrichment Analysis (ssGSEA)
 
 ## Disclaimer
 
-The primary purpose of this repository is to supplement our [manuscript](https://www.mcponline.org/content/18/3/576.abstract) in which we describe PTM-SEA and [PTMsigDB](http://prot-shiny-vm.broadinstitute.org:3838/ptmsigdb-app/). While ssGSEA2.0 presents an updated version of the original ssGSEA R implementation, we want to acknowledge that this is not the primary repository for ssGSEA. The official codebase for ssGSEA can be found [here](https://github.com/GSEA-MSigDB/ssGSEAProjection-gpmodule), and the official GenePattern module to perform ssGSEA can be accessed [here](https://www.genepattern.org/modules/docs/ssGSEAProjection/4).
+The primary purpose of this repository is to supplement our [manuscript](https://www.mcponline.org/content/18/3/576.abstract) in which we describe PTM-SEA and [PTMsigDB](http://prot-shiny-vm.broadinstitute.org:3838/ptmsigdb-app/). While ssGSEA2.0 presents an updated version of the original ssGSEA R implementation, we want to acknowledge that this is not the primary repository for ssGSEA. The official codebase for ssGSEA can be found [here](https://github.com/GSEA-MSigDB/ssGSEA-gpmodule), and the official GenePattern module to perform ssGSEA can be accessed [here](https://www.genepattern.org/modules/docs/ssGSEAProjection/4).
 
 
 ## ssGSEA 2.0
