@@ -1,7 +1,7 @@
 ####################################
 ## ssgsea parameters 
 ssgsea: 
- nperm: 10
+ nperm: 1000
  weight: 0.75
  norm: "rank"                  ## rank, log, log.rank, none
  correl_type: "z.-score"       ## "rank", "z.score", "symm.rank"

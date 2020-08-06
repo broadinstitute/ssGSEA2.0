@@ -4,14 +4,12 @@
 ## - yaml file
 ## parameters in yaml file will be updated with 
 ## parameters specified on cmd
-parse_param <- function(cmd_option_list){
+parse_param_ssgsea <- function(cmd_option_list, yaml_section='ssgsea'){
   
   ## #########################################################
   # parse command line parameters
   opt_cmd <- parse_args( OptionParser(option_list=cmd_option_list) )
-  
-  save(opt_cmd, file='debug.RData')
-  
+ 
   ############################################################
   ## parse yaml file
   if(!is.na(opt_cmd$yaml_file)) {
@@ -24,19 +22,16 @@ parse_param <- function(cmd_option_list){
       opt_yaml <- read_yaml(opt_cmd$yaml_file)
       
       ## extract relevant section
-      opt_yaml <- opt_yaml[['ssgsea']]
+      opt_yaml <- opt_yaml[[yaml_section]]
       
       ## parse cmd params
       cat('\n\nparsing command line parameters:\n', paste0(rep('-', 60), collapse = ''), '\n', sep='')
       for(x in names(opt_cmd))
-        cat('---', x, opt_cmd[[x]], is.na(opt_cmd[[x]]),'\n')
-      
-      #sapply(opt_cmd, function(x)cat('---', names(x), x, '\n'))
+        cat('---', x, opt_cmd[[x]], '; prefer yaml?', opt_cmd[[x]] == 'NA','\n')
       
       ## update yaml with parameters specified on cmd line 
       cat('\n\nUpdating parameter file with command line parameters:\n', paste0(rep('-', 60), collapse = ''), '\n', sep='')
       ## cmd parameters
-      #  cmd_not_null <- which( sapply(opt_cmd, function(x) !is.na(x)) )
       cmd_not_null <- which( !sapply(opt_cmd, function(x) x == 'NA' ) )
       cmd_to_update <- intersect( names(opt_cmd)[ cmd_not_null], names(opt_yaml) )
       cmd_to_add <- setdiff( names(opt_cmd), names(opt_yaml) )
