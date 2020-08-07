@@ -9,7 +9,7 @@ script.dir <- commandArgs()[4]
 script.dir <- sub('^(.*(/|\\\\)).*', '\\1', sub('.*?\\=','', script.dir))
 # this doesn't seem to be reliably working on Windows OS
 # if called from the directory is 'ssgsea-cli.R' resides in
-# the line belwo should fix this
+# the line below attempts to fix this
 script.dir <- ifelse(dir.exists(script.dir), script.dir, '.')
 
 # specify command line arguments
@@ -28,7 +28,7 @@ option_list <- list(
   make_option( c("-e", "--export"), action='store', type='character',  dest='export_signat_gct', help='For each signature export expression GCT files.', default = TRUE),
   make_option( c("-g", "--globalfdr"), action='store', type='character',  dest='global_fdr', help='If TRUE global FDR across all data columns is calculated.', default = FALSE),
   make_option( c("-l", "--lightspeed"), action='store', type='character',  dest='multi_core', help='If TRUE processing will be parallized across gene sets. (I ran out of single letters to define parameters...)', default = TRUE),
-  make_option( c("-y", "--yaml"), action='store', type='character',  dest='yaml_file', help='Paramater file (.yaml)', default = NA)
+  make_option( c("-y", "--yaml"), action='store', type='character',  dest='yaml_file', help='Parameter file (.yaml)', default = NA)
 )
 
 ## #####################################
