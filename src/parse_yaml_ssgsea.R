@@ -63,7 +63,7 @@ parse_param_ssgsea <- function(cmd_option_list, yaml_section='ssgsea'){
   ## force correct mode
   opt$nperm <- as.integer(opt$nperm)
   opt$weight <- as.numeric(opt$weight)
-  opt$norm <- as.character(opt$norm)
+  opt$sample_norm_type <- as.character(opt$sample_norm_type)
   opt$correl_type <- as.character(opt$correl_type)
   opt$statistic <- as.character(opt$statistic)
   opt$output_score_type <- as.character(opt$output_score_type)
