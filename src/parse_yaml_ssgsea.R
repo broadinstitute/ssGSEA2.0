@@ -4,7 +4,7 @@
 ## - yaml file
 ## parameters in yaml file will be updated with 
 ## parameters specified on cmd
-parse_param_ssgsea <- function(cmd_option_list, yaml_section='ssgsea'){
+parse_param_ssgsea <- function(cmd_option_list, yaml_section='panoply_ssgsea'){
   
   ## #########################################################
   # parse command line parameters
