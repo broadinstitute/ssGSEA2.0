@@ -67,6 +67,7 @@ parse_param_ssgsea <- function(cmd_option_list, yaml_section='panoply_ssgsea'){
   opt$correl_type <- as.character(opt$correl_type)
   opt$statistic <- as.character(opt$statistic)
   opt$output_score_type <- as.character(opt$output_score_type)
+  opt$output_prefix <- as.character(opt$output_prefix)
   opt$min_overlap <- as.integer(opt$min_overlap)
   opt$extended_output <- as.logical(opt$extended_output)
   opt$export_signat_gct <- as.logical(opt$export_signat_gct)
