@@ -28,6 +28,7 @@ if(!suppressPackageStartupMessages(require("pacman"))){
 #}
 ## 'script.dir' needs to be defined before sourcing this file
 source(file.path(script.dir, 'src', 'io.R'))
+source(file.path(script.dir, 'src', 'utils.R'))
 
 p_load(gtools)
 p_load(verification)

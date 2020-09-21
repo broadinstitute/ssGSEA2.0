@@ -34,14 +34,14 @@ option_list <- list(
 ## #####################################
 ## source the actual script
 source(file.path(script.dir, 'src', 'ssGSEA2.0.R'))
-source(file.path(script.dir, 'src','parse_yaml_ssgsea.R'))
+source(file.path(script.dir, 'src', 'parse_yaml_ssgsea.R'))
 
 # parse command line parameters
 opt <- parse_param_ssgsea(option_list) 
  
 # hard-coded parameters
 spare.cores <- 0 # use all available cpus
-log.file <- paste(opt$output.prefix, '_ssgsea.log.txt', sep='')
+log.file <- paste(opt$output_prefix, '_ssgsea.log.txt', sep='')
 
 
 ## ######################################################################################################

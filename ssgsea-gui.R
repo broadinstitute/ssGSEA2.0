@@ -1,5 +1,5 @@
 ################################################################################################################
-## Filename: ssgsea-gui.r
+## Filename: ssgsea-gui.R
 ## Created: September 09, 2017
 ## Author(s): Karsten Krug
 ##
