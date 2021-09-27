@@ -15,7 +15,7 @@ script.dir <- ifelse(dir.exists(script.dir), script.dir, '.')
 # specify command line arguments
 option_list <- list(
   make_option( c("-i", "--input"), action='store', type='character',  dest='input_ds', help='Path to input GCT file.'),
-  make_option( c("-o", "--ouptut"), action='store', type='character',  dest='output_prefix', help='File prefix for output files.', default='out'),
+  make_option( c("-o", "--output"), action='store', type='character',  dest='output_prefix', help='File prefix for output files.', default='out'),
   make_option( c("-d", "--db"), action='store', type='character',  dest='gene_set_databases', help='Path to gene set database (GMT format).'),
   make_option( c("-n", "--norm"), action='store', type='character',  dest='sample_norm_type', help='Sample normalization: "rank", "log", "log.rank" or "none".', default = 'rank'),
   make_option( c("-w", "--weight"), action='store', type='character',  dest='weight', help='When weight==0, all genes have the same weight; if weight>0 actual values matter and can change the resulting score.', default = 0.75),
