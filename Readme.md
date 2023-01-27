@@ -7,7 +7,7 @@ Resources for gene-centric **single sample Gene Set Enrichment Analysis (ssGSEA)
 
 ## Disclaimer
 
-The primary purpose of this repository is to supplement our [manuscript](https://www.mcponline.org/content/18/3/576.abstract) in which we describe PTM-SEA and [PTMsigDB](https://proteomics.broadapps.org/ptmsigdb/). While ssGSEA2.0 presents an updated version of the original ssGSEA R implementation, we want to acknowledge that this is not the primary repository for ssGSEA. The official codebase for ssGSEA can be found [here](https://github.com/GSEA-MSigDB/ssGSEA-gpmodule), and the official GenePattern module to perform ssGSEA can be accessed [here](https://www.genepattern.org/modules/docs/ssGSEAProjection/4).
+The primary purpose of this repository is to supplement our [manuscript](https://www.mcponline.org/content/18/3/576.abstract) in which we describe PTM-SEA and [PTMsigDB](https://proteomics.broadapps.org/ptmsigdb/). While ssGSEA2.0 presents an updated version of the original ssGSEA R implementation, we want to acknowledge that this is **not the primary repository for ssGSEA**. The official codebase for ssGSEA can be found [here](https://github.com/GSEA-MSigDB/ssGSEA-gpmodule), and the official GenePattern module to perform ssGSEA can be accessed [here](https://www.genepattern.org/modules/docs/ssGSEAProjection/4).
 
 
 ## ssGSEA 2.0
@@ -71,6 +71,10 @@ To run the script source it into a running R-session.
 
 ##### **iOS/MAC** 
 In order to invoke file dialogs as decribed above, the [XQuartz](https://www.xquartz.org) X Window System is required. Once installed ```ssgsea-gui.R``` can be sourced into an R session.
+
+
+### R Package
+For use in R, Nicole Gay has created an [R package](https://github.com/nicolerg/ssGSEA2.0) that incorporates ssGSEA2.0, along with required dependencies for both R 3.6 and R >= 4.0. Instruction for use of the library can be found along with the package on [GitHub](https://github.com/nicolerg/ssGSEA2.0). 
 
 
 ### Command line
