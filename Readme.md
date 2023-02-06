@@ -80,7 +80,12 @@ For use in R, Nicole Gay has created an [R package](https://github.com/nicolerg/
 ### Command line
 For integration of ssGSEA2.0/PTM-SEA into your own analysis pipelines we recommend to use the ```ssgsea-cli.R``` script which has been successfully tested on Windows, Mac and Linux OS. Please see ```ssgsea-cli.R --help``` for instructions.
 
+### Preprocessing input GCT
+Preprocess script `preprocess_gct-cli.R` use case:
+- Create gene-centric GCT with unique gene symbols as `rid`
+- Create site-centric GCT with PTMsigDB-compatible site identifier
 
+PTM-SEA accepts only UniProt and 7AA flanking sequence (SeqWin) format for sites. If your GCT has row IDs (`rid`) as UniProt, RefSeq or gene symbol, you can use the ```preprocess_gct-cli.R``` script to convert to the supported format. Please see ```preprocess_gct-cli.R --help``` for instructions. 
 
 ## Misc
 

@@ -1,0 +1,31 @@
+####################################
+## ssgsea parameters 
+panoply_ssgsea: 
+ nperm: 1000
+ weight: 0.75
+ output_prefix: "ptm-sea-results"
+ sample_norm_type: "rank"        ## rank, log, log.rank, none
+ correl_type: "z.score"          ## "rank", "z.score", "symm.rank"
+ statistic: "area.under.RES"     ## "area.under.RES", "Kolmogorov-Smirnov" 
+ output_score_type: "NES"        ## 'Score type: "ES" - enrichment score,  "NES" - normalized ES'
+ min_overlap: 5                 ## 'Minimal overlap between signature and data set.'
+ extended_output: TRUE           ## 'If TRUE additional stats on signature coverage etc. will be included as row annotations in the GCT results files.'
+ export_signat_gct: TRUE         ## For each signature export expression GCT files.
+ global_fdr: FALSE               ## If TRUE global FDR across all data columns is calculated.
+ multi_core: TRUE                ## If TRUE processing will be parallized across gene sets using (N-1) CPU cores.
+
+######################################
+## ssgsea preprocessGCT parameters   
+panoply_preprocess_gct:
+ level: ssc                      ## Mode of report, 'ssc' - single-site-centric, 'gc' - gene-centric, 'gcr' - gene-centric-redundant.
+ id_type: sm                    ## Notation of site-ids: 'sm' - Spectrum Mill; 'wg' - Web Gestalt; 'ph' - Philosopher
+ id_type_out: uniprot           ## Type of site id for output: 'uniprot', 'refseq', 'seqwin', 'psp' (psp not implemented yet).
+ acc_type_in: refseq            ## Type of accession number in 'rid' object in GCT file (uniprot, refseq, symbol).
+ seqwin_column: VMsiteFlanks    ## Column containing flanking sequences, separated by '|'. Only relevant if '--id_type_out' = 'seqwin'
+ gene_symbol_column: geneSymbol ## Name of column listing gene names; used for gene centric reports.
+ sgt_column: subgroupNum        ## Column used to collpase subgroup-top (SGT) reports.
+ localized: TRUE                ## CAUTION: it is NOT RECOMMENDED to set this flag to FALSE. If TRUE only fully localized sites will be considered.
+ mode: median                   ## Determines how multiple sites per gene will be combined: sd - most variable (standard deviation) across sample columns; SGT - subgroup top: first subgroup in protein group (Spectrum Mill); abs.max - for log-transformed, signed p-values.
+ residue: "S|T|Y"               ## Modified residues, e.g. "S|T|Y" or "K".
+ ptm: p                         ## Type of modification, e.g "p" or "ac".
+ preprocess_gct: TRUE           ## If FALSE nothing will be done; probably needed for to make this step optional in WDL.
