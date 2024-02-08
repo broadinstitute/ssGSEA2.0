@@ -33,12 +33,14 @@ option_list <- list(
 )
 
 ## #####################################
+opt <- parse_args( OptionParser(option_list=option_list) ) # parse args straight from command line
+
 ## source the actual script
 source(file.path(opt$libdir, 'src', 'ssGSEA2.0.R'))
 source(file.path(opt$libdir, 'src', 'parse_yaml_ssgsea.R'))
 
 # parse command line parameters
-opt <- parse_param_ssgsea(option_list) 
+opt <- parse_param_ssgsea(option_list) # reparse args with our special yaml overwrite function
  
 # hard-coded parameters
 spare.cores <- 0 # use all available cpus
