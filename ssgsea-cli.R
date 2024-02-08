@@ -33,11 +33,12 @@ option_list <- list(
 )
 
 ## #####################################
-opt <- parse_args( OptionParser(option_list=option_list) ) # parse args straight from command line
+# parse script-directory straight from command line inputs. or use '.' by default.
+script.dir = parse_args( OptionParser(option_list=option_list) )$script.dir # create script.dir variable for backwards compatibility
 
 ## source the actual script
-source(file.path(opt$script.dir, 'src', 'ssGSEA2.0.R'))
-source(file.path(opt$script.dir, 'src', 'parse_yaml_ssgsea.R'))
+source(file.path(script.dir, 'src', 'ssGSEA2.0.R'))
+source(file.path(script.dir, 'src', 'parse_yaml_ssgsea.R'))
 
 # parse command line parameters
 opt <- parse_param_ssgsea(option_list) # reparse args with our special yaml overwrite function
