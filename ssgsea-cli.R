@@ -29,15 +29,15 @@ option_list <- list(
   make_option( c("-g", "--globalfdr"), action='store', type='character',  dest='global_fdr', help='If TRUE global FDR across all data columns is calculated.', default = FALSE),
   make_option( c("-l", "--lightspeed"), action='store', type='character',  dest='multi_core', help='If TRUE processing will be parallized across gene sets. (I ran out of single letters to define parameters...)', default = TRUE),
   make_option( c("-y", "--yaml"), action='store', type='character',  dest='yaml_file', help='Parameter file (.yaml)', default = NA),
-  make_option( c("-z", "--libdir"), action='store', type='character',  dest='libdir', help='Folder to source from.', default = '.')
+  make_option( c("-z", "--scrdir"), action='store', type='character',  dest='script.dir', help="Folder where 'ssgsea-cli.R' script is located.", default = '.')
 )
 
 ## #####################################
 opt <- parse_args( OptionParser(option_list=option_list) ) # parse args straight from command line
 
 ## source the actual script
-source(file.path(opt$libdir, 'src', 'ssGSEA2.0.R'))
-source(file.path(opt$libdir, 'src', 'parse_yaml_ssgsea.R'))
+source(file.path(opt$script.dir, 'src', 'ssGSEA2.0.R'))
+source(file.path(opt$script.dir, 'src', 'parse_yaml_ssgsea.R'))
 
 # parse command line parameters
 opt <- parse_param_ssgsea(option_list) # reparse args with our special yaml overwrite function
