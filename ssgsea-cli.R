@@ -74,7 +74,7 @@ res <- tryCatch(ssGSEA2(
 ), error = function(e) {
   if (grepl("does not meet minimum-overlap", e) && # if we have a minimum-overlap error
       opt$tolerate_min_overlap_error) { # AND we have chosen to tolerate minimum-overlap errors
-    message(paste0("\n### WARNING\n",e)) # print minimum overlap error as warning, but do not stop()
+    cat(paste0("\n### WARNING\n",e)) # print minimum overlap error as warning, but do not stop()
   } else stop(e) # otherwise, print error as normal and stop
 } )
 
