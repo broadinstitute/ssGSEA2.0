@@ -75,11 +75,12 @@ res <- tryCatch(ssGSEA2(
   if (grepl("does not meet minimum-overlap", e) && # if we have a minimum-overlap error
       opt$tolerate_min_overlap_error) { # AND we have chosen to tolerate minimum-overlap errors
     cat(paste0("\n### WARNING\n",e)) # print minimum overlap error as warning, but do not stop()
-    write.table(TRUE, file = "gene_overlap_below_min.txt", quote = FALSE, col.names = FALSE, row.names = FALSE) # write file with boolean saying ssGSEA failed b/c min-overlap
     return(NA) # return nothing
   } else stop(e) # otherwise, print error as normal and stop
 } )
 
-
+# write output file declaring whether we tolerated a min-overlap error
+if(is.na(res)) min_overlap_err=TRUE else min_overlap_err=FALSE
+write.table(min_overlap_err, file = "geneset_overlap_below_min.txt", quote = FALSE, col.names = FALSE, row.names = FALSE) # write file with boolean saying ssGSEA failed b/c min-overlap
 
 
