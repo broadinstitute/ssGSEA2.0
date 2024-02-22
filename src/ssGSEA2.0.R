@@ -298,7 +298,7 @@ ssGSEA2 <- function (
     ## ###########################################
     ## stop if min-overlap has not been surpassed
     if(length(keep.idx) == 0) {
-      ## NOTE: verbiage of this error is used in ssgsea-cli.R to tolerate minimum-overlap errors. If verbiage is updated here, ensure that ssgsea-cli.R is ALSO updated!
+      ## NOTE: verbiage of this error is used in ssgsea-cli.R to identify/tolerate minimum-overlap errors. If verbiage is updated here, ensure that ssgsea-cli.R is ALSO updated!
       stop('Dataset does not meet minimum-overlap (',min.overlap,') to any gene sets in the provided database!\n')
     }
 

@@ -24,6 +24,7 @@ option_list <- list(
   make_option( c("-s", "--score"), action='store', type='character',  dest='output_score_type', help='Score type: "ES" - enrichment score,  "NES" - normalized ES', default = 'NES'),
   make_option( c("-p", "--perm"), action='store', type='character',  dest='nperm', help='Number of permutations', default = 1000),
   make_option( c("-m", "--minoverlap"), action='store', type='character',  dest='min_overlap', help='Minimal overlap between signature and data set.', default = 10),
+  make_option( c("-q", "--tolerate_min_overlap_error"), action='store', type='character',  dest='tolerate_min_overlap_error', help='Boolean to allow ssGSEA2() to tolerate input_ds having < min_overlap with gene_set_databases, without propogating error to shell.', default = FALSE),
   make_option( c("-x", "--extendedoutput"), action='store', type='character',  dest='extended_output', help='If TRUE additional stats on signature coverage etc. will be included as row annotations in the GCT results files.', default = TRUE),
   make_option( c("-e", "--export"), action='store', type='character',  dest='export_signat_gct', help='For each signature export expression GCT files.', default = TRUE),
   make_option( c("-g", "--globalfdr"), action='store', type='character',  dest='global_fdr', help='If TRUE global FDR across all data columns is calculated.', default = FALSE),
@@ -53,24 +54,30 @@ log.file <- paste(opt$output_prefix, '_ssgsea.log.txt', sep='')
 ##                   run ssGSEA
 ##
 ## ######################################################################################################
-res <- ssGSEA2(
-	input.ds=opt$input_ds,
-	output.prefix=opt$output_prefix,
-	gene.set.databases=opt$gene_set_databases,
+res <- tryCatch(ssGSEA2(
+  input.ds=opt$input_ds,
+  output.prefix=opt$output_prefix,
+  gene.set.databases=opt$gene_set_databases,
   sample.norm.type=opt$sample_norm_type,
-	weight=opt$weight,
-	statistic=opt$statistic,
-	output.score.type=opt$output_score_type,
-	nperm=opt$nperm,
-	min.overlap=opt$min_overlap,
+  weight=opt$weight,
+  statistic=opt$statistic,
+  output.score.type=opt$output_score_type,
+  nperm=opt$nperm,
+  min.overlap=opt$min_overlap,
   correl.type=opt$correl_type,
-	export.signat.gct=opt$export_signat_gct,
-	extended.output=opt$extended_output,
-	global.fdr=opt$global_fdr,
+  export.signat.gct=opt$export_signat_gct,
+  extended.output=opt$extended_output,
+  global.fdr=opt$global_fdr,
   par=opt$multi_core,
   spare.cores=spare.cores,
   log.file=log.file
-)
+), error = function(e) {
+  if (grepl("does not meet minimum-overlap", e) && # if we have a minimum-overlap error
+      opt$tolerate_min_overlap_error) { # AND we have chosen to tolerate minimum-overlap errors
+    message(paste0("\n### WARNING\n",e)) # print minimum overlap error as warning, but do not stop()
+  } else stop(e) # otherwise, print error as normal and stop
+} )
+
 
 
 
