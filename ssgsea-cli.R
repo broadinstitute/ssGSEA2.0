@@ -36,6 +36,8 @@ option_list <- list(
 ## #####################################
 # parse script-directory straight from command line inputs. or use '.' by default.
 script.dir = parse_args( OptionParser(option_list=option_list) )$script.dir # create script.dir variable for backwards compatibility
+tolerate_min_overlap_error = parse_args( OptionParser(option_list=option_list) )$tolerate_min_overlap_error # create script.dir variable for backwards compatibility
+print(tolerate_min_overlap_error)
 
 ## source the actual script
 source(file.path(script.dir, 'src', 'ssGSEA2.0.R'))
@@ -73,7 +75,7 @@ res <- tryCatch(ssGSEA2(
   log.file=log.file
 ), error = function(e) {
   if (grepl("does not meet minimum-overlap", e) && # if we have a minimum-overlap error
-      opt$tolerate_min_overlap_error) { # AND we have chosen to tolerate minimum-overlap errors
+      tolerate_min_overlap_error) { # AND we have chosen to tolerate minimum-overlap errors
     message(paste0("\n### WARNING\n",e)) # print minimum overlap error as warning, but do not stop()
   } else stop(e) # otherwise, print error as normal and stop
 } )
