@@ -44,11 +44,6 @@ source(file.path(script.dir, 'src', 'parse_yaml_ssgsea.R'))
 # parse command line parameters
 opt <- parse_param_ssgsea(option_list) # reparse args with our special yaml overwrite function
 
-print('\n###\n')
-print(opt)
-print('\n###\n')
-print(parse_args( OptionParser(option_list=option_list) ))
-
 # hard-coded parameters
 spare.cores <- 0 # use all available cpus
 log.file <- paste(opt$output_prefix, '_ssgsea.log.txt', sep='')
