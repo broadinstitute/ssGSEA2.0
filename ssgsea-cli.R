@@ -24,7 +24,7 @@ option_list <- list(
   make_option( c("-s", "--score"), action='store', type='character',  dest='output_score_type', help='Score type: "ES" - enrichment score,  "NES" - normalized ES', default = 'NES'),
   make_option( c("-p", "--perm"), action='store', type='character',  dest='nperm', help='Number of permutations', default = 1000),
   make_option( c("-m", "--minoverlap"), action='store', type='character',  dest='min_overlap', help='Minimal overlap between signature and data set.', default = 10),
-  make_option( c("-q", "--tolerate_min_overlap_error"), action='store', type='logical',  dest='tolerate_min_overlap_error', help='Boolean to allow ssGSEA2() to tolerate input_ds having < min_overlap with gene_set_databases, without propogating error to shell.', default = FALSE),
+  make_option( c("-q", "--tolerate_min_overlap_error"), action='store_true', dest='tolerate_min_overlap_error', help='Boolean to allow ssGSEA2() to tolerate input_ds having < min_overlap with gene_set_databases, without propogating error to shell.'),
   make_option( c("-x", "--extendedoutput"), action='store', type='character',  dest='extended_output', help='If TRUE additional stats on signature coverage etc. will be included as row annotations in the GCT results files.', default = TRUE),
   make_option( c("-e", "--export"), action='store', type='character',  dest='export_signat_gct', help='For each signature export expression GCT files.', default = TRUE),
   make_option( c("-g", "--globalfdr"), action='store', type='character',  dest='global_fdr', help='If TRUE global FDR across all data columns is calculated.', default = FALSE),
