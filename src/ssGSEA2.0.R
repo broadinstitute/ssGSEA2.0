@@ -283,16 +283,24 @@ ssGSEA2 <- function (
 
     cat('MSigDB import: ',  file=log.file, append=T)
     cat(Sys.time()-tt, '\n',  file=log.file, append=T)
+    
+    
+    
+    ## ###########################################
+    ## stop if no overlap has been found
+    if(length(which(size.ol.G > 0)) == 0) # if we have ZERO overlap with ANY gene set
+      stop('No overlap to any gene sets found in your data set!\nPossible reasons: 1) organism other than human; 2) wrong format of gene names/site ids!\n')
 
     ## ###########################################
     ## remove gene sets with unsufficient overlap
     ## index of gene sets to test
     keep.idx <- which(size.ol.G >= min.overlap)
-
     ## ###########################################
-    ## stop if no overlap has been found
-    if(length(keep.idx) == 0)
-        stop('No overlap to any gene sets found in your data set!\nPossible reasons: 1) organism other than human; 2) wrong format of gene names/site ids!\n')
+    ## stop if min-overlap has not been surpassed
+    if(length(keep.idx) == 0) {
+      ## NOTE: verbiage of this error is used in ssgsea-cli.R to identify/tolerate minimum-overlap errors. If verbiage is updated here, ensure that ssgsea-cli.R is ALSO updated!
+      stop('Dataset does not meet minimum-overlap (',min.overlap,') to any gene sets in the provided database!\n')
+    }
 
     ## #####################################################
     ## update all data
