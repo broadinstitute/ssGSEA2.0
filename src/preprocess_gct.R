@@ -566,10 +566,10 @@ preprocessGCT <- function(
       for(s in sites.dup){
       #  cat(s, '\n')
         if(n == 1){
-          mat.tmp <- matrix(mat[map.idx[[s]], ], ncol=n)
+          mat.tmp <- matrix(mat[map.idx[[s]], ,drop=F], ncol=n)
         } else{
           
-          mat.tmp <- mat[map.idx[[s]], ]
+          mat.tmp <- mat[map.idx[[s]], ,drop=F]
         }
         #cat(s, '\n')
        # View(mat.tmp)
