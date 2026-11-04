@@ -1,5 +1,23 @@
 # ssGSEA2.0/PTM-SEA
 
+> **⚠️ ssGSEA3.0 is now available.** With `weight > 0`, ssGSEA2.0's permutation
+> test is miscalibrated and inflates false positives
+> ([issue #45](https://github.com/broadinstitute/ssGSEA2.0/issues/45)).
+> Results with `weight = 0` are not affected. Previously published results that
+> used ssGSEA2.0 with `weight > 0` appear largely robust: the strongest signals
+> were preserved across ssGSEA2.0, a corrected ssGSEA2.0
+> ([ssGSEA2.0-fixed](https://doi.org/10.5281/zenodo.23734330)) and ssGSEA3.0 in
+> our reanalyses. We recommend caution for results near the significance
+> threshold.
+>
+> We recommend [ssGSEA3.0](https://github.com/broadinstitute/ssGSEA3.0) for new
+> analyses. It replaces permutation testing with feature-level bootstrap
+> resampling and accepts the same GCT inputs and outputs
+> ([preprint](https://doi.org/10.64898/2026.10.28.762524),
+> [software](https://doi.org/10.5281/zenodo.23734262)). This repository is no
+> longer under active development, but it will be kept as-is so that studies
+> that used ssGSEA2.0 remain reproducible.
+
 
 
 Resources for gene-centric **single sample Gene Set Enrichment Analysis (ssGSEA)** of gene expression data (e.g. mRNAs, proteins) and site-centric **PTM Signature Enrichment Analysis (PTM-SEA)** [1] of phosphoproteomics data sets using the [**PTM signatures database (PTMsigDB)**](https://proteomics.broadapps.org/ptmsigdb/) [1].
